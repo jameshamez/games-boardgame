@@ -1,0 +1,5 @@
+# ไฟล์ที่ใช้เฉพาะบนเครื่อง ไม่ต้องขึ้น Vercel
+server.py
+tools/
+.tts-cache/
+.claude/

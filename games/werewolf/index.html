@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0e1f">
+  <title>มนุษย์หมาป่า</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/common.css">
+  <link rel="stylesheet" href="werewolf.css">
+</head>
+<body data-phase="setup">
+  <div class="sky" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="stars stars-2"></div>
+    <div class="sun"></div>
+  </div>
+  <div class="wrap">
+    <nav class="topbar">
+      <a href="../../" class="btn btn-ghost">← คลังเกม</a>
+      <span class="title">🐺 มนุษย์หมาป่า</span>
+      <button class="btn-ghost" data-act="toggle-settings" aria-label="ตั้งค่า">⚙️</button>
+    </nav>
+    <div id="voice-warning" class="voice-warning" hidden></div>
+    <div id="settings" hidden></div>
+    <main id="app"></main>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="../../assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="dev-supabase-mock.js"></script>
+  <script src="roles.js"></script>
+  <script src="lines.js"></script>
+  <script src="voice/manifest.js"></script>
+  <script src="net-cloud.js"></script>
+  <script src="player-ui.js"></script>
+  <script src="host-net.js"></script>
+  <script src="werewolf.js"></script>
+</body>
+</html>

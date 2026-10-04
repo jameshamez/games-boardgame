@@ -1,0 +1,7 @@
+# ไฟล์ชั่วคราว/เฉพาะเครื่อง
+.tts-cache/
+.claude/
+.vercel/
+.DS_Store
+__pycache__/
+*.pyc
