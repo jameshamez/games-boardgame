@@ -17,10 +17,9 @@ function sb() {
   return sbClient;
 }
 
-const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+/** เลขห้อง 6 หลัก (กรอกง่ายบนมือถือ) */
 function newRoomCode() {
-  const r = crypto.getRandomValues(new Uint8Array(6));
-  return [...r].map(n => CODE_CHARS[n % CODE_CHARS.length]).join('');
+  return String(100000 + (crypto.getRandomValues(new Uint32Array(1))[0] % 900000));
 }
 const newId = () => [...crypto.getRandomValues(new Uint8Array(6))].map(n => n.toString(16).padStart(2, '0')).join('');
 

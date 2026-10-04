@@ -80,7 +80,7 @@ const LocalPlayerNet = {
 const PNet = CLOUD.enabled ? CloudPlayerNet : LocalPlayerNet;
 
 // ---------- หน้าจอ ----------
-const state = { joined: false, error: '', room: (params.get('room') || '').toUpperCase(), busy: false };
+const state = { joined: false, error: '', room: (params.get('room') || '').toUpperCase(), name: params.get('name') || '', busy: false };
 const ui = createPlayerUI(action => PNet.sendAction(action));
 
 function setPhase(view) {
@@ -90,14 +90,15 @@ function setPhase(view) {
 function renderJoin() {
   setPhase(null);
   $app.innerHTML = `
+    <a href="./" class="btn btn-ghost small-btn">← กลับ</a>
     <section class="hero">
       <div class="hero-moon"></div>
       <h1>เข้าร่วมเกม</h1>
       <p>ใส่ชื่อของคุณเพื่อเข้าร่วมวง</p>
     </section>
     <form class="panel stack" id="join-form">
-      <label class="field">รหัสห้อง<input type="text" name="room" maxlength="6" autocapitalize="characters" autocomplete="off" value="${escape(state.room)}" required></label>
-      <label class="field">ชื่อของคุณ<input type="text" name="name" maxlength="20" autocomplete="nickname" required autofocus></label>
+      <label class="field">เลขห้อง<input type="text" name="room" inputmode="numeric" maxlength="6" autocapitalize="characters" autocomplete="off" value="${escape(state.room)}" required></label>
+      <label class="field">ชื่อของคุณ<input type="text" name="name" maxlength="20" autocomplete="nickname" value="${escape(state.name)}" required autofocus></label>
       ${state.error ? `<p class="warn">⚠️ ${escape(state.error)}</p>` : ''}
       <button class="btn-primary btn-block btn-big" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? 'กำลังเข้าร่วม…' : 'เข้าร่วม'}</button>
     </form>`;
@@ -153,6 +154,8 @@ document.addEventListener('click', keepAwake, { once: true });
   renderJoin();
   if (state.room && await PNet.resume(state.room)) {
     state.joined = true;
-    showGame();
+    return showGame();
   }
+  // มาจากหน้า "เข้าร่วมห้อง" ที่กรอกเลขห้องและชื่อไว้แล้ว: เข้าร่วมให้เลย
+  if (state.room && state.name) document.getElementById('join-form').requestSubmit();
 })();

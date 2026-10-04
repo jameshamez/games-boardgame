@@ -19,7 +19,8 @@ const store = {
 
 // ---------- สถานะเกม ----------
 const S = {
-  screen: 'setup',
+  screen: inRoom() ? 'setup' : 'home',   // home = หน้าเลือก สร้างห้อง / เข้าร่วม / เครื่องเดียว
+  homeError: '',
   mode: store.get('mode', 'single'),   // single = เครื่องเดียว, multi = หลายเครื่อง
   joined: [],          // ผู้เล่นที่เข้าร่วมจากมือถือ [{pid, name, online, local?}]
   hostPlays: store.get('hostPlays', false),  // เจ้าห้องเล่นด้วย (ไม่มีจอกลาง)
@@ -44,6 +45,17 @@ const S = {
   subtitleEn: '',
   speaking: false,
 };
+
+/** อยู่ในห้องที่สร้างไว้ในแท็บนี้หรือไม่ (รีเฟรชหน้าแล้วกลับเข้าห้องเดิม) */
+function inRoom() {
+  try { return sessionStorage.getItem('werewolf.inRoom') === '1'; } catch { return false; }
+}
+function setInRoom(on) {
+  try {
+    if (on) sessionStorage.setItem('werewolf.inRoom', '1');
+    else { sessionStorage.removeItem('werewolf.inRoom'); sessionStorage.removeItem('werewolf.cloudHost'); }
+  } catch { /* ignore */ }
+}
 
 function sanitizeCounts(c) {
   if (!c) return null;
@@ -443,16 +455,38 @@ function namesPanel() {
 }
 
 const VIEWS = {
-  setup() {
-    if (!S.counts) applyPreset(PRESETS[0]);
+  home() {
     return `
       <section class="hero">
         <div class="hero-moon"></div>
         <h1>มนุษย์หมาป่า</h1>
-        <p>วางเครื่องไว้กลางวง แล้วให้เสียงพากย์ภาษาไทยพาเล่นทั้งกลางวันและกลางคืน — ไม่ต้องมีคนคุมเกม</p>
+        <p>ทุกคนเล่นบนมือถือตัวเอง มีเสียงพากย์ภาษาไทยพาเล่นกลางวัน–กลางคืน — ไม่ต้องมีคนคุมเกม</p>
       </section>
 
-      ${modeTabs()}
+      <section class="panel home-card">
+        <h3>🏠 สร้างห้องใหม่</h3>
+        <input type="text" id="create-name" placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.hostName)}" autocomplete="nickname">
+        ${S.homeError ? `<p class="warn">⚠️ ${esc(S.homeError)}</p>` : ''}
+        <button class="btn-primary btn-block btn-big" data-act="create-room">สร้างห้อง</button>
+        <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · เครื่องของคุณจะเป็นคนพากย์เสียง และคุณก็เล่นด้วย</small>
+      </section>
+
+      <section class="panel home-card">
+        <h3>🔑 เข้าร่วมห้อง</h3>
+        <form id="join-room" class="stack">
+          <input type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="เลขห้อง 6 หลัก" required autocomplete="off">
+          <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" required autocomplete="nickname">
+          <button class="btn-block btn-big" type="submit">เข้าร่วม</button>
+        </form>
+      </section>
+
+      <button class="btn-ghost btn-block small-btn" data-act="single">📱 หรือเล่นเครื่องเดียว (ส่งเครื่องเวียนกันในวง)</button>`;
+  },
+
+  setup() {
+    if (!S.counts) applyPreset(PRESETS[0]);
+    return `
+      <button class="btn-ghost small-btn back-home" data-act="go-home">← ${S.mode === 'multi' ? 'ปิดห้อง' : 'กลับ'}</button>
       ${S.mode === 'multi' ? lobbyPanel() : namesPanel()}
       <div id="setup-dyn">${setupDynamic()}</div>`;
   },
@@ -1110,20 +1144,16 @@ async function execute(targetId) {
 }
 
 // ---------- โหมดหลายเครื่อง ----------
-function modeTabs() {
-  const tab = (m, label) => `<button class="mode-tab ${S.mode === m ? 'on' : ''}" data-act="mode" data-m="${m}">${label}</button>`;
-  return `<div class="mode-tabs">${tab('single', '📱 เครื่องเดียว<small>ส่งเครื่องต่อกัน</small>')}${tab('multi', '📲 หลายเครื่อง<small>ทุกคนใช้มือถือตัวเอง</small>')}</div>`;
-}
-
 function lobbyPanel() {
   const join = Net.error ? `<p class="warn">⚠️ ${Net.error}</p>`
     : !Net.room ? '<p class="muted">กำลังเปิดห้อง…</p>'
     : `<div class="join-box">
         <div id="qr" class="qr" data-url="${esc(Net.joinUrl())}"></div>
         <div class="join-info">
-          <p>สแกน QR ด้วยมือถือ หรือเปิด</p>
+          <p>เลขห้อง</p>
+          <b class="room-code big">${Net.room}</b>
+          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR</p>
           <code>${esc(Net.joinUrl())}</code>
-          <p>รหัสห้อง <b class="room-code">${Net.room}</b></p>
           <small class="muted">${Net.kind === 'cloud' ? '🌍 ออนไลน์ — มือถือเข้าได้จากทุกเครือข่าย (4G/5G ก็ได้)'
             : Net.public ? '🌍 ลิงก์สาธารณะ — มือถือเข้าได้จากทุกเครือข่าย (4G/5G ก็ได้)'
             : '📶 มือถือต้องต่อ Wi-Fi เดียวกับเครื่องนี้ (ถ้าอยากเล่นต่างเครือข่าย ให้รัน python3 server.py --public)'}</small>
@@ -1133,9 +1163,9 @@ function lobbyPanel() {
     <section class="panel">
       <div class="row"><strong class="grow" id="player-count">ผู้เล่น (${S.joined.length} คน)</strong></div>
       ${join}
-      <label class="host-play"><input type="checkbox" data-hostplay ${S.hostPlays ? 'checked' : ''}>
+      ${Net.kind === 'cloud' ? '' : `<label class="host-play"><input type="checkbox" data-hostplay ${S.hostPlays ? 'checked' : ''}>
         <span>🙋 ฉันเล่นด้วยบนเครื่องนี้<small>ไม่ต้องมีจอกลาง — เครื่องนี้พากย์เสียงและเป็นผู้เล่นไปพร้อมกัน</small></span></label>
-      ${S.hostPlays ? `<input type="text" class="host-name" data-hostname placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.hostName)}">` : ''}
+      ${S.hostPlays ? `<input type="text" class="host-name" data-hostname placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.hostName)}">` : ''}`}
       <p class="muted small">เรียงตามที่นั่งรอบวง (กด ↑ ↓ เพื่อจัดลำดับ)</p>
       <div class="name-list">
         ${S.joined.map((j, i) => `
@@ -1432,11 +1462,37 @@ document.addEventListener('click', e => {
       refreshSetup();
     },
     start: startGame,
-    mode() {
-      S.mode = btn.dataset.m;
-      store.set('mode', S.mode);
+    'create-room'() {
+      const name = ($app.querySelector('#create-name')?.value || '').trim();
+      if (!name) { S.homeError = 'ใส่ชื่อของคุณก่อน'; return render(); }
+      S.homeError = '';
+      S.hostName = name;
+      store.set('hostName', name);
+      S.mode = 'multi';
+      store.set('mode', 'multi');
+      // โหมดออนไลน์: คนสร้างห้องเล่นด้วยเสมอ (ไม่มีจอกลาง)
+      if (Net.kind === 'cloud') { S.hostPlays = true; store.set('hostPlays', true); }
+      S.joined = [];
       syncHostEntry();
-      if (S.mode === 'multi') Net.start().then(render); else Net.stop();
+      setInRoom(true);
+      S.screen = 'setup';
+      Voice.unlock();
+      Net.start().then(render);
+      render();
+    },
+    single() {
+      S.mode = 'single';
+      store.set('mode', 'single');
+      syncHostEntry();
+      S.screen = 'setup';
+      render();
+    },
+    'go-home'() {
+      if (S.mode === 'multi' && S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่')) return;
+      Net.stop();
+      setInRoom(false);
+      S.joined = [];
+      S.screen = 'home';
       render();
     },
     seat() {
@@ -1503,6 +1559,16 @@ window.addEventListener('beforeunload', e => {
 
 Net.onLobby = () => { if (S.screen === 'setup') render(); else publishViews(); };
 Net.onAction = handlePlayerAction;
+// หน้า "เข้าร่วมห้อง": ส่งไปหน้าผู้เล่นพร้อมเลขห้องและชื่อ
+document.addEventListener('submit', e => {
+  if (e.target.id !== 'join-room') return;
+  e.preventDefault();
+  const f = new FormData(e.target);
+  const code = String(f.get('code')).trim();
+  const name = String(f.get('name')).trim();
+  location.href = `play.html?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
+});
+
 syncHostEntry();
-if (S.mode === 'multi') Net.start().then(render);
+if (S.mode === 'multi' && S.screen === 'setup') Net.start().then(render);
 render();
