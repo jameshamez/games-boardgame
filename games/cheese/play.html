@@ -3,23 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0b0e1f">
-  <title>มนุษย์หมาป่า · ผู้เล่น</title>
+  <meta name="theme-color" content="#0f1630">
+  <title>หนูขโมยชีส · ผู้เล่น</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../../assets/common.css">
   <link rel="stylesheet" href="../../assets/party.css">
+  <link rel="stylesheet" href="cheese.css">
 </head>
-<body data-phase="setup" class="player-page">
-  <div class="sky" aria-hidden="true">
-    <div class="stars"></div>
-    <div class="stars stars-2"></div>
-    <div class="sun"></div>
-  </div>
+<body class="ch player-page" data-phase="setup">
+  <div class="sky" aria-hidden="true"><div class="stars"></div><div class="stars stars-2"></div><div class="sun"></div></div>
   <div class="wrap">
     <nav class="topbar">
-      <span class="title">🐺 มนุษย์หมาป่า</span>
+      <span class="title">🧀 หนูขโมยชีส</span>
       <span class="conn" id="conn"></span>
       <button class="btn-ghost mute-btn" id="mute" aria-label="เปิด/ปิดเสียงพากย์">🔊</button>
     </nav>
@@ -28,6 +25,7 @@
     <main id="app"></main>
     <div id="narr" class="narr-bar" hidden><span class="narr-th"></span><span class="narr-en"></span></div>
   </div>
+  <script>window.GAME_NS = { id: 'ch', store: 'cheese' };</script>
   <script src="../../assets/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../../assets/supabase-mock.js"></script>
@@ -36,7 +34,7 @@
   <script src="../../assets/net-cloud.js"></script>
   <script src="../../assets/net-local.js"></script>
   <script src="../../assets/narration.js"></script>
-  <script src="player-ui.js"></script>
+  <script src="ch-ui.js"></script>
   <script src="play.js"></script>
 </body>
 </html>

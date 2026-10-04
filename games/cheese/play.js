@@ -1,5 +1,5 @@
 'use strict';
-// หน้าเข้าร่วมเกมบนมือถือ (โหมดหลายเครื่อง)
+// หน้าเข้าร่วมเกมหนูขโมยชีสบนมือถือ
 // เชื่อมต่อผ่าน Supabase (ถ้าตั้งค่าไว้ใน assets/config.js) หรือ server.py บนเครื่อง
 // มือถือแค่แสดงหน้าจอที่เจ้าห้องส่งมา — ไม่มีข้อมูลบทบาทของคนอื่นอยู่ในเครื่องนี้
 
@@ -12,7 +12,7 @@ const params = new URLSearchParams(location.search);
 
 // ---------- หน้าจอ ----------
 const state = { joined: false, error: '', room: (params.get('room') || '').toUpperCase(), name: params.get('name') || '', busy: false };
-const ui = createPlayerUI(action => PNet.sendAction(action));
+const ui = createCheeseUI(action => PNet.sendAction(action));
 
 function setPhase(view) {
   document.body.dataset.phase = !view ? 'setup' : view.phase === 'night' ? 'night' : view.phase === 'day' ? 'day' : 'setup';
@@ -23,7 +23,7 @@ function renderJoin() {
   $app.innerHTML = `
     <a href="./" class="btn btn-ghost small-btn">← กลับ</a>
     <section class="hero">
-      <div class="hero-moon"></div>
+      <div class="ch-logo">🧀</div>
       <h1>เข้าร่วมเกม</h1>
       <p>ใส่ชื่อของคุณเพื่อเข้าร่วมวง</p>
     </section>

@@ -128,7 +128,9 @@ const CloudHostNet = {
     if (this.ch) this.ch.send({ type: 'broadcast', event, payload });
   },
 
-  hello() { this.send('hello', { pub: this.kp.pub }); },
+  // epoch เปลี่ยนทุกครั้งที่เปิดหน้าใหม่ — มือถือจะรู้ว่าต้องแนะนำตัวใหม่ (เช่นคนสร้างห้องรีเฟรชหน้า)
+  epoch: newId(),
+  hello() { this.send('hello', { pub: this.kp.pub, epoch: this.epoch }); },
 
   async join(p) {
     const pid = String(p.pid || '');
@@ -215,6 +217,7 @@ const CloudPlayerNet = {
   kp: null,
   key: null,          // กุญแจร่วมกับเจ้าห้อง
   hostPub: null,
+  hostEpoch: null,
   joined: false,
   lastV: 0,
   lastViewAt: 0,
@@ -295,9 +298,13 @@ const CloudPlayerNet = {
   async hello(p) {
     if (!p.pub) return;
     if (p.pub !== this.hostPub) {
-      // เจ้าห้องเปลี่ยนกุญแจ (เช่นรีเฟรชหน้า) ต้องแนะนำตัวใหม่
+      // เจ้าห้องเปลี่ยนกุญแจ ต้องตกลงกุญแจร่วมใหม่
       this.hostPub = p.pub;
       this.key = await Box.shared(this.kp.priv, p.pub);
+    }
+    if (p.epoch !== this.hostEpoch) {
+      // เจ้าห้องเปิดหน้าใหม่ (เช่นรีเฟรช) จำผู้เล่นไม่ได้แล้ว ต้องแนะนำตัวใหม่
+      this.hostEpoch = p.epoch;
       this.lastV = 0;
       this.joined = false;
     }
