@@ -29,7 +29,7 @@ const S = {
   names: store.get('names', ['', '', '', '', '']),
   counts: sanitizeCounts(store.get('counts2', null)),
   settings: Object.assign(
-    { voice: true, lang: 'both', rate: 1, voiceURI: '', talkSec: 180, revealOnDeath: true, firstNightKill: false },
+    { voice: true, voiceAll: true, lang: 'both', rate: 1, voiceURI: '', talkSec: 180, revealOnDeath: true, firstNightKill: false },
     store.get('settings', {})),
   players: [],
   day: 0,
@@ -64,123 +64,21 @@ function sanitizeCounts(c) {
   return out;
 }
 
-// ---------- เสียงพากย์ ----------
-const Voice = {
-  voices: [],
-  audio: new Audio(),
-  server: false,        // มี server.py ที่สร้างเสียงชื่อผู้เล่นได้หรือไม่
-  speechWorks: false,   // เสียงของเบราว์เซอร์เคยพูดได้จริง
-  speechBroken: false,  // เสียงของเบราว์เซอร์ค้าง ไม่ยอมพูด
-  current: null,
-
-  load() {
-    if (!('speechSynthesis' in window)) return;
-    Voice.voices = speechSynthesis.getVoices().filter(v => (v.lang || '').toLowerCase().startsWith('th'));
-  },
-  pick() {
-    return Voice.voices.find(v => v.voiceURI === S.settings.voiceURI) || Voice.voices[0] || null;
-  },
-  async checkServer() {
-    try { Voice.server = (await fetch('/tts?text=')).status === 204; } catch { Voice.server = false; }
-  },
-
-  /** เล่นไฟล์เสียง คืน true ถ้าเล่นได้ (หรือถูกสั่งหยุด) */
-  playUrl(url) {
-    return new Promise(resolve => {
-      const a = Voice.audio;
-      let done = false;
-      const finish = ok => {
-        if (done) return;
-        done = true;
-        a.onended = a.onerror = a.onpause = null;
-        resolve(ok);
-      };
-      a.onended = () => finish(true);
-      a.onerror = () => finish(false);
-      a.onpause = () => finish(true);
-      a.src = url;
-      a.playbackRate = S.settings.rate;
-      a.play().catch(() => finish(false));
-      setTimeout(() => finish(true), 20000);
-    });
-  },
-
-  /** พูดข้อความหนึ่งชิ้น: ไฟล์ที่อัดไว้ › เซิร์ฟเวอร์สร้างเสียง › เสียงเบราว์เซอร์ › แสดงข้อความอย่างเดียว */
-  async speak(text) {
-    const fallbackMs = Math.min(900 + text.length * 70, 3500);
-    if (!S.settings.voice) return sleep(fallbackMs);
-    const file = typeof VOICE_MANIFEST !== 'undefined' && VOICE_MANIFEST[text];
-    if (file && await Voice.playUrl('voice/' + file)) return;
-    if (Voice.server && await Voice.playUrl('/tts?text=' + encodeURIComponent(text))) return;
-    return Voice.speakBrowser(text, fallbackMs);
-  },
-
-  speakBrowser(text, fallbackMs) {
-    return new Promise(resolve => {
-      if (Voice.speechBroken || !('speechSynthesis' in window)) return setTimeout(resolve, fallbackMs);
-      let done = false;
-      const finish = () => { if (!done) { done = true; resolve(); } };
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = 'th-TH';
-      const v = Voice.pick();
-      if (v) u.voice = v;
-      u.rate = S.settings.rate;
-      u.onstart = () => { Voice.speechWorks = true; };
-      u.onend = finish;
-      u.onerror = finish;
-      Voice.current = u;
-      // Chrome มักทิ้งประโยคที่สั่งพูดทันทีหลัง cancel() จึงเว้นจังหวะเล็กน้อย
-      setTimeout(() => {
-        if (done) return;
-        speechSynthesis.resume();
-        speechSynthesis.speak(u);
-        setTimeout(() => {
-          if (!done && !Voice.speechWorks) {
-            Voice.speechBroken = true;
-            speechSynthesis.cancel();
-            showVoiceWarning();
-            setTimeout(finish, fallbackMs);
-          }
-        }, 3000);
-      }, 80);
-      setTimeout(finish, fallbackMs * 3 / S.settings.rate + 1500);
-    });
-  },
-
-  stop() {
-    Voice.audio.pause();
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-  },
-
-  unlock() {
-    // Safari/iOS ต้องเริ่มเล่นเสียงจากการแตะของผู้ใช้หนึ่งครั้งก่อน
-    const a = Voice.audio;
-    const first = typeof VOICE_MANIFEST !== 'undefined' && Object.values(VOICE_MANIFEST)[0];
-    if (first && a.paused) {
-      a.muted = true;
-      a.src = 'voice/' + first;
-      a.play().then(() => { a.pause(); a.muted = false; }).catch(() => { a.muted = false; });
-    }
-  },
-};
-Voice.checkServer();
-if ('speechSynthesis' in window) {
-  Voice.load();
-  speechSynthesis.addEventListener?.('voiceschanged', Voice.load);
-}
-
-function showVoiceWarning() {
-  const el = document.getElementById('voice-warning');
-  if (!el) return;
-  el.hidden = false;
-  el.innerHTML = `🔇 พากย์ชื่อผู้เล่นไม่ได้ จะแสดงชื่อเป็นข้อความแทน (บทพากย์อื่นยังมีเสียงปกติ)<br>
-    <small>เบราว์เซอร์นี้ไม่มีเสียงภาษาไทย — ลองเปิดด้วย Chrome หรือ Safari หรือเปิดผ่าน python3 server.py บน Mac</small>`;
-}
+// เสียงพากย์: ใช้ Voice จาก voice.js (ใช้ร่วมกับหน้ามือถือ)
+Voice.cfg = () => S.settings;
 
 let runId = 0;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-function newRun() { runId++; Voice.stop(); return runId; }
+function newRun() { runId++; Voice.stop(); castSay({ kind: 'hush' }); return runId; }
+
+/** ส่งบทพากย์ไปให้มือถือทุกเครื่องพากย์ตาม (บทพากย์เป็นข้อมูลที่ทุกคนได้ยินอยู่แล้ว ไม่ใช่ความลับ) */
+let saySeq = 0;
+function castSay(say) {
+  if (S.mode !== 'multi' || !Net.active || !S.settings.voiceAll) return;
+  saySeq += 1;
+  Net.say({ seq: saySeq, ...say });
+}
 
 /** พูดทีละบรรทัดพร้อมแสดงซับไตเติล (ไทย / อังกฤษ / ไทยแล้วตามด้วยอังกฤษ) คืน false ถ้าถูกขัดจังหวะ */
 async function narrate(lines, id = newRun()) {
@@ -191,6 +89,7 @@ async function narrate(lines, id = newRun()) {
     if (mode === 'en') setSubtitle(en.join(' '), true, '');
     else setSubtitle(th.join(' '), true, mode === 'both' ? en.join(' ') : '');
     const parts = mode === 'th' ? th : mode === 'en' ? en : [...th, ...en];
+    castSay({ kind: 'line', sub: S.subtitle, subEn: S.subtitleEn, parts });
     for (const part of parts) {
       if (id !== runId) return false;
       await Voice.speak(part);
@@ -1163,6 +1062,8 @@ function lobbyPanel() {
     <section class="panel">
       <div class="row"><strong class="grow" id="player-count">ผู้เล่น (${S.joined.length} คน)</strong></div>
       ${join}
+      <label class="host-play"><input type="checkbox" data-voiceall ${S.settings.voiceAll ? 'checked' : ''}>
+        <span>🔊 พากย์เสียงบนทุกเครื่อง<small>เหมาะกับเล่นคนละที่ (เช่นผ่านวิดีโอคอล) — ถ้านั่งด้วยกัน ปิดไว้ให้พากย์แค่เครื่องนี้จะได้ไม่เสียงซ้อน</small></span></label>
       ${Net.kind === 'cloud' ? '' : `<label class="host-play"><input type="checkbox" data-hostplay ${S.hostPlays ? 'checked' : ''}>
         <span>🙋 ฉันเล่นด้วยบนเครื่องนี้<small>ไม่ต้องมีจอกลาง — เครื่องนี้พากย์เสียงและเป็นผู้เล่นไปพร้อมกัน</small></span></label>
       ${S.hostPlays ? `<input type="text" class="host-name" data-hostname placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.hostName)}">` : ''}`}
@@ -1385,6 +1286,11 @@ function handlePlayerAction(pid, a) {
 
 // ---------- จัดการการแตะ ----------
 document.addEventListener('change', e => {
+  if ('voiceall' in e.target.dataset) {
+    S.settings.voiceAll = e.target.checked;
+    store.set('settings', S.settings);
+    return;
+  }
   if (!('hostplay' in e.target.dataset)) return;
   S.hostPlays = e.target.checked;
   store.set('hostPlays', S.hostPlays);

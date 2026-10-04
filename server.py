@@ -69,6 +69,7 @@ class Room:
         self.version = 0
         self.actions = []   # [{seq, pid, action}]
         self.seq = 0
+        self.says = []      # บทพากย์ล่าสุด ให้มือถือพากย์ตาม [{seq, kind, ...}]
 
     def player_list(self):
         now = time.time()
@@ -163,10 +164,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not p or p["token"] != q.get("token"):
                 return self.send_json({"error": "unknown"}, 404)
             p["seen"] = time.time()
+            since = int(q.get("say") or 0)
+            says = [s for s in ROOM.says if s.get("seq", 0) > since]
             if q.get("v") == str(ROOM.version):
-                return self.send_json({"v": ROOM.version, "same": True})
+                return self.send_json({"v": ROOM.version, "same": True, "says": says})
             view = ROOM.views.get(q["pid"]) or {"phase": "lobby", "name": p["name"]}
-            return self.send_json({"v": ROOM.version, "view": view})
+            return self.send_json({"v": ROOM.version, "view": view, "says": says})
 
     # ---------- POST ----------
     def do_POST(self):
@@ -176,6 +179,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "/api/host/new": self.host_new,
             "/api/host/views": self.host_views,
             "/api/host/kick": self.host_kick,
+            "/api/host/say": self.host_say,
             "/api/join": self.join,
             "/api/action": self.action,
         }
@@ -197,6 +201,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         ROOM.views = data.get("views") or {}
         ROOM.version += 1
         return self.send_json({"ok": True, "v": ROOM.version})
+
+    def host_say(self, data):
+        if data.get("key") != ROOM.key:
+            return self.send_json({"error": "badkey"}, 403)
+        if isinstance(data.get("say"), dict):
+            ROOM.says.append(data["say"])
+            del ROOM.says[:-20]
+        return self.send_json({"ok": True})
 
     def host_kick(self, data):
         if data.get("key") != ROOM.key:

@@ -20,6 +20,8 @@ const LocalPlayerNet = {
   onView: () => {},
   onGone: () => {},
   onConn: () => {},
+  onSay: () => {},
+  lastSay: null,      // null = ยังไม่เคยถาม (ข้ามบทพากย์เก่าที่ค้างอยู่)
 
   async api(method, path, body) {
     const res = await fetch(path, {
@@ -57,8 +59,13 @@ const LocalPlayerNet = {
 
   async poll() {
     try {
-      const { status, data } = await this.api('GET', `/api/view?pid=${this.pid}&token=${this.token}&v=${this.v ?? ''}`);
+      const { status, data } = await this.api('GET', `/api/view?pid=${this.pid}&token=${this.token}&v=${this.v ?? ''}&say=${this.lastSay ?? 0}`);
       this.onConn(true);
+      for (const say of data.says || []) {
+        if (this.lastSay !== null) this.onSay(say);
+        this.lastSay = Math.max(this.lastSay || 0, say.seq);
+      }
+      if (this.lastSay === null) this.lastSay = 0;
       if (status === 404) {
         clearInterval(this.timer);
         this.save(null);
@@ -148,6 +155,75 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') { wakeLock = null; keepAwake(); }
 });
 document.addEventListener('click', keepAwake, { once: true });
+
+// ---------- เสียงพากย์ตามเครื่องคนสร้างห้อง ----------
+const Narr = {
+  queue: [],
+  playing: false,
+  gen: 0,
+  muted: (() => { try { return localStorage.getItem('werewolf.mute') === '1'; } catch { return false; } })(),
+  hideTimer: null,
+};
+Voice.cfg = () => ({ voice: !Narr.muted, rate: 1, voiceURI: '' });
+
+const $narr = document.getElementById('narr');
+const $mute = document.getElementById('mute');
+const $unlock = document.getElementById('unlock');
+
+function showNarr(say) {
+  clearTimeout(Narr.hideTimer);
+  $narr.hidden = false;
+  $narr.querySelector('.narr-th').textContent = say.sub || '';
+  $narr.querySelector('.narr-en').textContent = say.subEn || '';
+}
+
+function onSay(say) {
+  if (say.kind === 'hush') {
+    Narr.queue = [];
+    Narr.gen += 1;
+    Voice.stop();
+    return;
+  }
+  Narr.queue.push(say);
+  if (Narr.queue.length > 3) Narr.queue.shift();  // ตามไม่ทันก็ข้ามบรรทัดเก่า
+  pumpNarr();
+}
+
+async function pumpNarr() {
+  if (Narr.playing) return;
+  Narr.playing = true;
+  while (Narr.queue.length) {
+    const say = Narr.queue.shift();
+    const gen = Narr.gen;
+    showNarr(say);
+    for (const part of say.parts || []) {
+      if (gen !== Narr.gen) break;
+      await Voice.speak(part);
+      if (!Voice.blocked) $unlock.hidden = true;  // เล่นเสียงได้แล้ว ซ่อนปุ่มเปิดเสียง
+    }
+  }
+  Narr.playing = false;
+  Narr.hideTimer = setTimeout(() => { $narr.hidden = true; }, 2500);
+}
+
+function renderMute() {
+  $mute.textContent = Narr.muted ? '🔇' : '🔊';
+  $mute.title = Narr.muted ? 'เปิดเสียงพากย์' : 'ปิดเสียงพากย์';
+}
+$mute.addEventListener('click', () => {
+  Narr.muted = !Narr.muted;
+  try { localStorage.setItem('werewolf.mute', Narr.muted ? '1' : '0'); } catch { /* ignore */ }
+  if (Narr.muted) Voice.stop(); else Voice.unlock();
+  renderMute();
+});
+renderMute();
+
+// เบราว์เซอร์มือถือไม่ให้เล่นเสียงจนกว่าจะแตะหน้าจอ: ปลดล็อกตอนแตะครั้งแรก หรือกดแถบด้านบน
+Voice.onBlocked = () => { if (!Narr.muted) $unlock.hidden = false; };
+$unlock.addEventListener('click', () => { Voice.unlock(); $unlock.hidden = true; });
+document.addEventListener('click', () => Voice.unlock(), { once: true });
+
+PNet.onSay = onSay;
 
 // ---------- เริ่ม: ถ้าเคยเข้าห้องนี้แล้ว ให้กลับเข้าห้องเดิมเลย ----------
 (async () => {

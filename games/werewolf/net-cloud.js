@@ -187,6 +187,9 @@ const CloudHostNet = {
     }, 60);
   },
 
+  /** บทพากย์ (ไม่เข้ารหัส เพราะทุกคนได้ยินอยู่แล้ว) */
+  say(say) { this.send('say', say); },
+
   kick(pid) {
     delete this.players[pid];
     S.joined = S.joined.filter(j => j.pid !== pid);
@@ -217,6 +220,7 @@ const CloudPlayerNet = {
   onView: () => {},
   onGone: () => {},
   onConn: () => {},
+  onSay: () => {},
 
   storeKey(room) { return `werewolf.cloudPlayer.${room}`; },
 
@@ -262,6 +266,7 @@ const CloudPlayerNet = {
       if (this.waiter) this.waiter({ ok: true });
     });
     ch.on('broadcast', { event: 'views' }, ({ payload }) => this.views(payload));
+    ch.on('broadcast', { event: 'say' }, ({ payload }) => { if (this.joined) this.onSay(payload); });
     ch.on('broadcast', { event: 'kick' }, ({ payload }) => {
       if (payload.to !== this.pid) return;
       localStorage.removeItem(this.storeKey(this.room));

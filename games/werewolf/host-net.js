@@ -85,6 +85,11 @@ const LocalHostNet = {
     api('POST', '/api/host/views', { key: this.key, views }).catch(() => { this.lastViews = ''; });
   },
 
+  say(say) {
+    if (!this.timer) return;
+    api('POST', '/api/host/say', { key: this.key, say }).catch(() => {});
+  },
+
   kick(pid) {
     S.joined = S.joined.filter(j => j.pid !== pid);
     api('POST', '/api/host/kick', { key: this.key, pid });

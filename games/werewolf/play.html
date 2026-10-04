@@ -21,12 +21,18 @@
     <nav class="topbar">
       <span class="title">🐺 มนุษย์หมาป่า</span>
       <span class="conn" id="conn"></span>
+      <button class="btn-ghost mute-btn" id="mute" aria-label="เปิด/ปิดเสียงพากย์">🔊</button>
     </nav>
+    <div id="voice-warning" class="voice-warning" hidden></div>
+    <button id="unlock" class="unlock-banner" hidden>🔇 แตะตรงนี้เพื่อเปิดเสียงพากย์</button>
     <main id="app"></main>
+    <div id="narr" class="narr-bar" hidden><span class="narr-th"></span><span class="narr-en"></span></div>
   </div>
   <script src="../../assets/config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="dev-supabase-mock.js"></script>
+  <script src="voice/manifest.js"></script>
+  <script src="voice.js"></script>
   <script src="net-cloud.js"></script>
   <script src="player-ui.js"></script>
   <script src="play.js"></script>
