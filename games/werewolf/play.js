@@ -97,7 +97,7 @@ function renderJoin() {
       <p>ใส่ชื่อของคุณเพื่อเข้าร่วมวง</p>
     </section>
     <form class="panel stack" id="join-form">
-      <label class="field">เลขห้อง<input type="text" name="room" inputmode="numeric" maxlength="6" autocapitalize="characters" autocomplete="off" value="${escape(state.room)}" required></label>
+      <label class="field">เลขห้อง<input type="text" name="room" maxlength="6" autocapitalize="characters" autocomplete="off" value="${escape(state.room)}" required></label>
       <label class="field">ชื่อของคุณ<input type="text" name="name" maxlength="20" autocomplete="nickname" value="${escape(state.name)}" required autofocus></label>
       ${state.error ? `<p class="warn">⚠️ ${escape(state.error)}</p>` : ''}
       <button class="btn-primary btn-block btn-big" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? 'กำลังเข้าร่วม…' : 'เข้าร่วม'}</button>

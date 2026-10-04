@@ -474,8 +474,8 @@ const VIEWS = {
       <section class="panel home-card">
         <h3>🔑 เข้าร่วมห้อง</h3>
         <form id="join-room" class="stack">
-          <input type="text" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="เลขห้อง 6 หลัก" required autocomplete="off">
-          <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" required autocomplete="nickname">
+          <input type="text" name="code" maxlength="6" placeholder="เลขห้อง" autocapitalize="characters" autocomplete="off">
+          <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" autocomplete="nickname">
           <button class="btn-block btn-big" type="submit">เข้าร่วม</button>
         </form>
       </section>
@@ -1564,8 +1564,16 @@ document.addEventListener('submit', e => {
   if (e.target.id !== 'join-room') return;
   e.preventDefault();
   const f = new FormData(e.target);
-  const code = String(f.get('code')).trim();
+  // รับทั้งเลขห้องแบบตัวเลขและแบบตัวอักษร (ห้องที่สร้างจากเวอร์ชันเก่า)
+  const code = String(f.get('code')).replace(/\s/g, '').toUpperCase();
   const name = String(f.get('name')).trim();
+  const warn = msg => {
+    S.homeError = '';
+    e.target.querySelector('.warn')?.remove();
+    e.target.insertAdjacentHTML('beforeend', `<p class="warn">⚠️ ${msg}</p>`);
+  };
+  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง');
+  if (!name) return warn('ใส่ชื่อของคุณก่อน');
   location.href = `play.html?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 });
 

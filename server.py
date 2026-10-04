@@ -35,7 +35,6 @@ CACHE = ROOT / ".tts-cache"
 PORT = 8765
 ONLINE_SECONDS = 6
 MAX_ACTIONS = 500
-CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # ตัดตัวที่สับสนง่าย เช่น O/0, I/1
 PUBLIC = {"url": None, "enabled": False}
 FAILED_JOINS = []  # เวลาที่มีคนใส่รหัสห้องผิด (กันการเดารหัสเมื่อเปิดลิงก์สาธารณะ)
 
@@ -58,9 +57,9 @@ class Room:
         self.reset()
 
     def reset(self):
-        # ลิงก์สาธารณะใช้รหัสยาวขึ้น เพราะใครในอินเทอร์เน็ตก็เข้าถึงเซิร์ฟเวอร์ได้
+        # ลิงก์สาธารณะใช้เลขห้อง 6 หลัก เพราะใครในอินเทอร์เน็ตก็เข้าถึงเซิร์ฟเวอร์ได้
         if PUBLIC["enabled"]:
-            self.code = "".join(secrets.choice(CODE_CHARS) for _ in range(6))
+            self.code = str(100000 + secrets.randbelow(900000))
         else:
             self.code = f"{random.randint(0, 9999):04d}"
         self.key = secrets.token_hex(16)
