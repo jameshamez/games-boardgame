@@ -1,0 +1,117 @@
+/* เกมคำต้องห้าม — ใช้ส่วนประกอบจาก assets/party.css แล้วเปลี่ยนเป็นธีมปาร์ตี้สีชมพูม่วง */
+body.fw {
+  --bg: #1a0b2e;
+  --bg-2: #3b1263;
+  --surface: rgba(52, 24, 86, .72);
+  --surface-solid: #2c1450;
+  --surface-2: rgba(255, 255, 255, .07);
+  --text: #fff1fb;
+  --muted: #cdb3e6;
+  --accent: #ff5fa2;
+  --accent-2: #ff8a3d;
+  --accent-text: #2a0716;
+  --border: rgba(255, 255, 255, .12);
+  --wolf: #ff5d6c;
+  --village: #5fe0a8;
+  background:
+    radial-gradient(900px 600px at 90% -10%, rgba(255, 95, 162, .35), transparent 60%),
+    radial-gradient(700px 500px at -10% 110%, rgba(110, 80, 255, .35), transparent 60%),
+    linear-gradient(180deg, var(--bg-2), var(--bg) 70%);
+  background-attachment: fixed;
+}
+
+.fw-logo { font-size: 84px; line-height: 1.1; filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .45)); animation: float 4s ease-in-out infinite; }
+body.fw .hero h1 { background: linear-gradient(180deg, #fff, #ffb3d4); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* หมวดคำ */
+.fw-cats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 10px 0 4px; }
+.fw-cat {
+  flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; padding: 12px;
+  background: var(--surface-2); border: 1.5px solid var(--border);
+}
+.fw-cat.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--surface-solid)); }
+.fw-cat-icon { font-size: 28px; }
+.fw-cat b { font-family: var(--font-display); font-weight: 500; }
+.fw-cat small { color: var(--muted); font-size: 12.5px; line-height: 1.35; }
+.fw-settings { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.fw-settings label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; font-size: 14px; }
+.fw-settings select { background: var(--surface-2); }
+@media (max-width: 420px) { .fw-settings { grid-template-columns: 1fr; } }
+
+/* แถบควบคุมของคนสร้างห้อง */
+.fw-hostbar {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: center;
+  padding: 10px; margin: 6px 0 12px; border-radius: 16px; background: var(--surface-2); border: 1px dashed var(--border);
+}
+.fw-hostbar button { min-height: 40px; padding: 8px 14px; font-size: 14px; }
+.fw-host-timer { display: none; }
+
+/* หน้าจอระหว่างเล่น */
+.fw-stage { text-align: center; padding: 18px 4px 8px; }
+.fw-big { font-size: 84px; line-height: 1.1; }
+.fw-big.pop { animation: pop .7s cubic-bezier(.2, 1.6, .4, 1) both; }
+.fw-rules ol { margin: 8px 0 0; padding-left: 22px; }
+.fw-rules li { margin: 6px 0; }
+
+.fw-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 10px; }
+.fw-timer {
+  font-family: var(--font-display); font-size: 40px; line-height: 1; font-variant-numeric: tabular-nums;
+  padding: 8px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border);
+}
+.fw-timer.low { color: var(--wolf); border-color: var(--wolf); animation: pulse 1s ease-in-out infinite; }
+.fw-meta { color: var(--muted); font-weight: 600; text-align: right; }
+
+.fw-me {
+  text-align: center; padding: 16px; border-radius: 22px; margin-bottom: 14px;
+  background: linear-gradient(135deg, rgba(255, 95, 162, .25), rgba(110, 80, 255, .25));
+  border: 1.5px solid rgba(255, 255, 255, .18);
+}
+.fw-me.out { background: var(--surface-2); border-style: dashed; }
+.fw-me-label { color: var(--muted); font-size: 14px; }
+.fw-me-word { font-family: var(--font-display); font-size: 40px; line-height: 1.3; letter-spacing: 2px; }
+.fw-me-hint { color: var(--muted); font-size: 14px; }
+.fw-me-score { margin-top: 6px; font-weight: 700; color: var(--accent); }
+
+.fw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.fw-card {
+  display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 18px; text-align: center;
+  background: var(--surface); border: 1.5px solid var(--border); box-shadow: var(--shadow);
+}
+.fw-card.out { opacity: .5; }
+.fw-card.out .fw-word { text-decoration: line-through; }
+.fw-card.confirm { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--surface-solid)); }
+.fw-card.confirm p { margin: 0; }
+.fw-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.fw-name small { color: var(--accent); font-weight: 600; }
+.fw-word {
+  font-family: var(--font-display); font-size: 26px; line-height: 1.3; padding: 8px 4px; border-radius: 12px;
+  background: rgba(0, 0, 0, .22); word-break: break-word;
+}
+.fw-catch { background: linear-gradient(135deg, #ff4d6d, #ff8a3d); color: #fff; border: none; font-weight: 700; }
+.fw-out { color: var(--muted); font-size: 14px; padding: 10px 0; }
+.fw-row { display: flex; gap: 6px; }
+.fw-row > * { flex: 1; padding: 8px 6px; font-size: 14px; }
+
+/* เด้งเตือนเมื่อมีคนโดนจับ */
+.fw-overlay {
+  position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: 24px; background: rgba(20, 6, 36, .92); backdrop-filter: blur(6px);
+  animation: fadeIn .2s ease-out;
+}
+.fw-overlay.me { background: rgba(80, 8, 24, .94); }
+.fw-overlay h2 { font-size: 30px; margin: 8px 0; }
+.fw-overlay p { margin: 4px 0; color: var(--muted); }
+.fw-ov-icon { font-size: 96px; animation: pop .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+.fw-ov-word { font-family: var(--font-display); font-size: 52px; color: #ffd166; margin: 6px 0 10px; }
+@keyframes fadeIn { from { opacity: 0; } }
+
+/* สรุปผล */
+.fw-results { display: flex; flex-direction: column; margin-top: 10px; }
+.fw-res { display: grid; grid-template-columns: 34px 1fr auto; gap: 2px 10px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--border); }
+.fw-res:last-child { border-bottom: none; }
+.fw-res.win .fw-res-name { color: #ffd166; }
+.fw-res.out { opacity: .7; }
+.fw-rank { font-size: 20px; text-align: center; }
+.fw-res-name { font-weight: 700; }
+.fw-res-score { font-weight: 700; text-align: right; }
+.fw-res-word { grid-column: 2 / -1; color: var(--muted); font-size: 14px; }

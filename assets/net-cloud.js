@@ -4,6 +4,9 @@
 // หน้าจอของแต่ละคน (บทบาท ผลการตรวจ ฯลฯ) และการกดจากมือถือ ถูกเข้ารหัสด้วยกุญแจที่มีแค่เจ้าห้องกับผู้เล่นคนนั้น
 // คนอื่นที่ฟังห้องเดียวกันอยู่จึงอ่านไม่ได้
 
+// แต่ละเกมแยกห้องกันด้วย ROOM_NS (กำหนด window.GAME_NS ก่อนโหลดไฟล์นี้)
+const ROOM_NS = Object.assign({ id: 'ww', store: 'werewolf' }, window.GAME_NS || {});
+
 const CLOUD = (() => {
   const cfg = window.WW_CONFIG || {};
   return { enabled: !!(cfg.supabaseUrl && cfg.supabaseAnonKey), url: cfg.supabaseUrl, key: cfg.supabaseAnonKey };
@@ -88,13 +91,13 @@ const CloudHostNet = {
 
   async start() {
     if (this.ch) return;
-    const saved = storeGet(sessionStorage, 'werewolf.cloudHost');
+    const saved = storeGet(sessionStorage, `${ROOM_NS.store}.cloudHost`);
     this.room = (saved && saved.room) || newRoomCode();
     this.kp = await Box.keyPair(saved && saved.kp);
-    storeSet(sessionStorage, 'werewolf.cloudHost', { room: this.room, kp: this.kp.stored });
+    storeSet(sessionStorage, `${ROOM_NS.store}.cloudHost`, { room: this.room, kp: this.kp.stored });
     this.error = '';
 
-    const ch = sb().channel(`ww-${this.room}`, { config: { broadcast: { self: false }, presence: { key: 'host' } } });
+    const ch = sb().channel(`${ROOM_NS.id}-${this.room}`, { config: { broadcast: { self: false }, presence: { key: 'host' } } });
     ch.on('broadcast', { event: 'who' }, () => this.hello());
     ch.on('broadcast', { event: 'join' }, ({ payload }) => this.join(payload));
     ch.on('broadcast', { event: 'a' }, ({ payload }) => this.action(payload));
@@ -222,7 +225,7 @@ const CloudPlayerNet = {
   onConn: () => {},
   onSay: () => {},
 
-  storeKey(room) { return `werewolf.cloudPlayer.${room}`; },
+  storeKey(room) { return `${ROOM_NS.store}.cloudPlayer.${room}`; },
 
   /** เข้าห้องอีกครั้งด้วยตัวตนเดิม (ถ้าเคยเข้าห้องนี้) */
   async resume(room) {
@@ -256,7 +259,7 @@ const CloudPlayerNet = {
 
   async connect() {
     if (this.ch) sb().removeChannel(this.ch);
-    const ch = sb().channel(`ww-${this.room}`, { config: { broadcast: { self: false }, presence: { key: this.pid } } });
+    const ch = sb().channel(`${ROOM_NS.id}-${this.room}`, { config: { broadcast: { self: false }, presence: { key: this.pid } } });
     ch.on('broadcast', { event: 'hello' }, ({ payload }) => this.hello(payload));
     ch.on('broadcast', { event: 'joined' }, ({ payload }) => {
       if (payload.to !== this.pid) return;
