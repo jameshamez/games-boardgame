@@ -302,11 +302,14 @@ input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px
 .win-title.wolf { color: var(--wolf); }
 .win-title.village { color: var(--village); }
 .win-title.tanner { color: var(--solo); }
+.win-title.won { color: var(--village); }
+.win-title.lost { color: var(--wolf); }
 .reveal-list { display: flex; flex-direction: column; margin-top: 10px; }
 .rl-item { display: grid; grid-template-columns: 34px 1fr auto auto; gap: 8px; align-items: center; padding: 9px 4px; border-bottom: 1px solid var(--border); }
 .rl-item:last-child { border-bottom: none; }
 .rl-item.dead { opacity: .55; }
-.rl-item.won .rl-name { color: var(--accent); }
+.rl-item.won .rl-name { color: var(--village); }
+.rl-item.lost .rl-name { color: var(--wolf); }
 .rl-icon { font-size: 24px; }
 .rl-role { color: var(--muted); font-size: 14px; text-align: right; }
 .log { font-size: 14px; color: var(--muted); padding-left: 22px; margin: 8px 0 0; }

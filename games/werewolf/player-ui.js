@@ -12,7 +12,23 @@ function createPlayerUI(send) {
     actionId: '',     // ระบุหน้าจอที่ต้องกด (เปลี่ยนเมื่อเจ้าห้องขึ้นหน้าจอใหม่)
     sent: '',         // ส่งการกดของหน้าจอนี้ไปแล้ว
     cardOpen: false,
+    talkEnd: 0,       // เวลาที่ช่วงอภิปรายจะหมด (นาฬิกาของเครื่องนี้)
   };
+
+  // นับเวลาอภิปรายถอยหลังบนเครื่องนี้ (เจ้าห้องส่งเวลาที่เหลือมาใหม่ทุกครั้งที่หยุด/เพิ่มเวลา)
+  const talkLeft = () => {
+    const t = U.view && U.view.talk;
+    if (!t) return 0;
+    return t.paused ? t.left : Math.max(0, Math.ceil((U.talkEnd - Date.now()) / 1000));
+  };
+  const fmtTime = sec => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  setInterval(() => {
+    const el = U.el && U.el.querySelector('[data-ptimer]');
+    if (!el) return;
+    const left = talkLeft();
+    el.textContent = fmtTime(left);
+    el.parentElement.classList.toggle('low', left <= 30);
+  }, 250);
 
   U.mount = el => {
     U.el = el;
@@ -31,6 +47,7 @@ function createPlayerUI(send) {
       if (a && navigator.vibrate) navigator.vibrate([120, 60, 120]);
     }
     if (U.view && U.view.phase !== view.phase) U.cardOpen = false;
+    if (view.talk) U.talkEnd = Date.now() + view.talk.left * 1000;
     U.view = view;
     U.render();
   };
@@ -196,7 +213,12 @@ function createPlayerUI(send) {
         : v.dayPhase === 'talk' ? '🗣️ ช่วงอภิปราย — คุยกันหาตัวหมาป่า'
         : v.dayPhase === 'vote' ? '🗳️ กำลังลงคะแนน'
         : '☀️ ฟังประกาศ';
-      return `${header(v)}<div class="stage">
+      const t = v.dayPhase === 'talk' && v.talk;
+      const left = t ? talkLeft() : 0;
+      const timer = t ? `<div class="timer-ring ${left <= 30 ? 'low' : ''}">
+          <div class="timer" data-ptimer>${fmtTime(left)}</div><small>${t.paused ? '⏸ หยุดเวลาไว้' : 'เวลาอภิปราย'}</small></div>
+          ${t.noVote ? '<p class="muted">🚫 วันแรกไม่มีการโหวต — หมดเวลาแล้วเข้าสู่กลางคืนเลย</p>' : ''}` : '';
+      return `${header(v)}<div class="stage">${timer}
         <div class="info-card"><div class="big-text">${msg}</div>
           ${(v.status || []).map(s => `<p><strong>${s}</strong></p>`).join('')}</div>
         ${roleCard(v.me, U.cardOpen)}
@@ -207,13 +229,13 @@ function createPlayerUI(send) {
       const title = v.winner === 'wolf' ? 'ฝ่ายมนุษย์หมาป่าชนะ!' : v.winner === 'tanner' ? 'ยาจกชนะ!' : 'ฝ่ายชาวบ้านชนะ!';
       return `<div class="stage">
         <div class="big-icon trophy">${v.won ? '🏆' : '😵'}</div>
-        <h2 class="win-title ${v.winner}">${v.won ? 'คุณชนะ!' : 'คุณแพ้'}</h2>
+        <h2 class="win-title ${v.won ? 'won' : 'lost'}">${v.won ? 'คุณชนะ!' : 'คุณแพ้'}</h2>
         <p class="muted">${title}</p>
       </div>
       <section class="panel"><strong>บทบาทของทุกคน</strong>
         <div class="reveal-list">${v.players.map(p => `
-          <div class="rl-item ${p.alive ? '' : 'dead'}"><span class="rl-icon">${p.icon}</span>
-            <span class="rl-name">${escHtml(p.name)}</span><span class="rl-role">${p.role}</span><span>${p.alive ? 'รอด' : '💀'}</span></div>`).join('')}
+          <div class="rl-item ${p.alive ? '' : 'dead'} ${p.won ? 'won' : 'lost'}"><span class="rl-icon">${p.icon}</span>
+            <span class="rl-name">${escHtml(p.name)}${p.won ? ' 🏆' : ''}</span><span class="rl-role">${p.role}</span><span>${p.alive ? 'รอด' : '💀'}</span></div>`).join('')}
         </div></section>
       <p class="muted" style="text-align:center">รอเจ้าของห้องเริ่มเกมใหม่…</p>`;
     },

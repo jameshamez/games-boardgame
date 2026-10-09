@@ -29,7 +29,7 @@ const S = {
   names: store.get('names', ['', '', '', '', '']),
   counts: sanitizeCounts(store.get('counts2', null)),
   settings: Object.assign(
-    { voice: true, voiceAll: true, lang: 'both', rate: 1, voiceURI: '', talkSec: 180, revealOnDeath: true, firstNightKill: false },
+    { voice: true, voiceAll: true, lang: 'both', rate: 1, voiceURI: '', talkSec: 180, revealOnDeath: true, firstNightKill: false, firstDayVote: false },
     store.get('settings', {})),
   players: [],
   day: 0,
@@ -129,6 +129,8 @@ const seenAsWolf = p => isKiller(p) || p.role === 'lycan';
 const teamOf = p => ROLES[p.role].team;
 const validNames = () => (S.mode === 'multi' ? S.joined.map(j => j.name.trim()) : S.names.map(n => n.trim()).filter(Boolean));
 const names = list => list.map(p => esc(p.name)).join(', ');
+/** วันนี้ไม่มีการโหวต (กฎวันแรก) */
+const noVoteToday = () => S.day === 1 && !S.settings.firstDayVote;
 
 function suggestWolves(n) { return n <= 6 ? 1 : n <= 9 ? 2 : n <= 13 ? 3 : n <= 17 ? 4 : 5; }
 
@@ -494,6 +496,7 @@ const VIEWS = {
       if (S.g.banished != null) notes.push(`🧿 ${esc(byId(S.g.banished).name)} ถูกสาปออกจากหมู่บ้าน`);
       if (S.g.silenced != null) notes.push(`🤐 ${esc(byId(S.g.silenced).name)} ห้ามพูด`);
       if (S.g.doubleVote) notes.push('😈 วันนี้ประหาร 2 รอบ');
+      if (noVoteToday()) notes.push('🚫 วันแรกไม่มีการโหวต');
       return `${head}<div class="stage"><div class="timer-ring ${D.left <= 30 ? 'low' : ''}">
           <div class="timer" id="timer">${formatTime(D.left)}</div><small>เวลาอภิปราย</small></div>
         ${subtitleBox()}
@@ -502,7 +505,7 @@ const VIEWS = {
           <button data-act="timer-toggle">${D.paused ? '▶️ ต่อ' : '⏸ หยุด'}</button>
           <button data-act="timer-add">+30 วิ</button>
         </div>
-        <button class="btn-primary btn-block btn-big" style="margin-top:10px" data-act="to-vote">🗳️ ไปลงคะแนนเลย</button></div>`;
+        <button class="btn-primary btn-block btn-big" style="margin-top:10px" data-act="to-vote">${noVoteToday() ? '🌙 จบวัน · เข้าสู่กลางคืน' : '🗳️ ไปลงคะแนนเลย'}</button></div>`;
     }
     if (D.phase === 'vote') {
       const candidates = alive().filter(p => p.id !== S.g.banished);
@@ -532,7 +535,7 @@ const VIEWS = {
       <section class="panel">
         <strong>บทบาทของทุกคน</strong>
         <div class="reveal-list">${S.players.map(p => `
-          <div class="rl-item ${p.alive ? '' : 'dead'} ${won(p) ? 'won' : ''}">
+          <div class="rl-item ${p.alive ? '' : 'dead'} ${won(p) ? 'won' : 'lost'}">
             <span class="rl-icon">${ROLES[p.role].icon}</span>
             <span class="rl-name">${esc(p.name)}${won(p) ? ' 🏆' : ''}</span>
             <span class="rl-role">${ROLES[p.role].name}${p.origRole !== p.role ? ` <small>(เดิม: ${ROLES[p.origRole].name})</small>` : ''}</span>
@@ -563,6 +566,7 @@ function renderSettings() {
       <select data-setting="talkSec">${TALK_OPTIONS.map(s =>
         `<option value="${s}" ${st.talkSec === s ? 'selected' : ''}>${minutesText(s)}</option>`).join('')}</select></label>
     <label>หมาป่าฆ่าได้ตั้งแต่คืนแรก <input type="checkbox" data-setting="firstNightKill" ${st.firstNightKill ? 'checked' : ''}></label>
+    <label>โหวตได้ตั้งแต่วันแรก <input type="checkbox" data-setting="firstDayVote" ${st.firstDayVote ? 'checked' : ''}></label>
     <label>เปิดเผยบทบาทเมื่อตาย <input type="checkbox" data-setting="revealOnDeath" ${st.revealOnDeath ? 'checked' : ''}></label>
     <div class="actions"><button data-act="test-voice">🔊 ทดสอบเสียง</button>
       ${S.screen !== 'setup' ? '<button data-act="quit">จบเกมนี้</button>' : ''}</div>
@@ -750,7 +754,7 @@ const NIGHT_STEPS = [
   { role: 'spellcaster', phases: () => [pickPhase({ title: 'ห้ามใครพูดพรุ่งนี้?', optional: true, skipLabel: 'ไม่ร่าย',
     candidates: alive().filter(p => p.role !== 'spellcaster'),
     onDone([id]) { S.night.spell = id; } })] },
-  { role: 'troublemaker', phases: () => onceUsed('troublemaker') ? usedInfo() : [{ type: 'choice', title: 'ป่วนหมู่บ้านไหม?',
+  { role: 'troublemaker', when: () => S.day > 1 || S.settings.firstDayVote, phases: () => onceUsed('troublemaker') ? usedInfo() : [{ type: 'choice', title: 'ป่วนหมู่บ้านไหม?',
     html: '<p>ถ้าป่วน พรุ่งนี้จะมีการประหาร 2 รอบ (ใช้ได้ครั้งเดียว)</p>',
     options: [{ label: '😈 ป่วนเลย', value: true, primary: true }, { label: 'ไว้ก่อน', value: false }],
     onDone(v) { if (v) { S.g.used.troublemaker = true; S.night.trouble = true; } } }] },
@@ -987,7 +991,7 @@ function startTalk() {
   const id = newRun();
   S.dayState = { phase: 'talk', left: S.settings.talkSec, paused: false, warned: false, pick: [] };
   render();
-  narrate(LINES.talk(S.settings.talkSec), id);
+  narrate([...LINES.talk(S.settings.talkSec), ...(noVoteToday() ? LINES.noVoteFirstDay : [])], id);
   stopTimer();
   timerHandle = setInterval(() => {
     const D = S.dayState;
@@ -1000,8 +1004,21 @@ function startTalk() {
       el.parentElement.classList.toggle('low', D.left <= 30);
     }
     if (D.left === 30 && !D.warned) { D.warned = true; narrate(LINES.talk30); }
-    if (D.left <= 0) { stopTimer(); toVote(true); }
+    if (D.left <= 0) { stopTimer(); endTalk(true); }
   }, 1000);
+}
+
+/** หมดช่วงอภิปราย: ไปโหวต หรือถ้าเป็นวันแรก (ไม่มีโหวต) ก็เข้าสู่กลางคืนเลย */
+async function endTalk(timeUp) {
+  if (!noVoteToday()) return toVote(timeUp);
+  stopTimer();
+  const id = newRun();
+  S.dayState = { phase: 'narrating', pick: [], icon: '🌙' };
+  render();
+  addLog('วันแรกไม่มีการโหวต');
+  if (!await narrate([...(timeUp ? LINES.talkEnd : []), ...LINES.noExecutionFirstDay], id)) return;
+  await sleep(900);
+  startNight();
 }
 
 function toVote(timeUp, round = 1) {
@@ -1211,6 +1228,8 @@ function viewFor(p) {
     v.status = [];
     if (S.g.banished === p.id) v.status.push('🧿 คุณถูกแม่หมอสาป วันนี้ห้ามพูดและห้ามโหวต');
     if (S.g.silenced === p.id) v.status.push('🤐 คุณถูกจอมเวทร่ายมนตร์ วันนี้ห้ามพูด');
+    // เจ้าห้องที่เล่นด้วยเห็นนาฬิกาใหญ่บนจออยู่แล้ว
+    if (D.phase === 'talk' && p.pid !== HOST_PID) v.talk = { left: Math.max(D.left, 0), paused: D.paused, noVote: noVoteToday() };
     if (D.phase === 'hunter' && !D.hostOverride && S.pendingHunters[0] === p.id) {
       v.action = { kind: 'hunter', title: '🏹 ยิงใครไปด้วย?', candidates: alive().map(c => ({ id: c.id, name: c.name })) };
     }
@@ -1224,7 +1243,8 @@ function viewFor(p) {
     const w = S.winner;
     v.winner = w;
     v.won = w === 'tanner' ? p.role === 'tanner' : teamOf(p) === w;
-    v.players = S.players.map(o => ({ name: o.name, icon: ROLES[o.role].icon, role: ROLES[o.role].name, alive: o.alive }));
+    v.players = S.players.map(o => ({ name: o.name, icon: ROLES[o.role].icon, role: ROLES[o.role].name, alive: o.alive,
+      won: w === 'tanner' ? o.role === 'tanner' : teamOf(o) === w }));
   }
   return v;
 }
@@ -1450,7 +1470,7 @@ document.addEventListener('click', e => {
     'hunter-skip'() { hunterResolve(null); },
     'timer-toggle'() { S.dayState.paused = !S.dayState.paused; render(); },
     'timer-add'() { S.dayState.left += 30; if (S.dayState.left > 30) S.dayState.warned = false; render(); },
-    'to-vote'() { toVote(false); },
+    'to-vote'() { endTalk(false); },
     execute() { execute(S.dayState.pick[0]); },
     'no-execute'() { execute(null); },
     'to-setup'() { newRun(); S.screen = 'setup'; render(); },
