@@ -214,7 +214,15 @@ function roleBadge(role) {
 }
 
 // ---------- หน้าจอ ----------
+let lastScreen = null;
 function render() {
+  // เข้าหน้าตั้งค่าห้อง: กางแผงตั้งค่าไว้ให้เจ้าห้องเห็นตัวเลือกก่อนเริ่มเกม (กด ⚙️ เพื่อพับได้)
+  if (S.screen !== lastScreen) {
+    const el = document.getElementById('settings');
+    el.hidden = S.screen !== 'setup';
+    if (!el.hidden) renderSettings();
+    lastScreen = S.screen;
+  }
   document.body.dataset.phase = S.screen === 'night' ? 'night' : (S.screen === 'day' ? 'day' : (S.screen === 'end' ? 'end' : 'setup'));
   const hp = hostPlayer();
   if (hp && ['reveal', 'night', 'day'].includes(S.screen)) {
@@ -573,7 +581,7 @@ function renderSettings() {
     <label>โหวตได้ตั้งแต่วันแรก · Vote on day 1 <input type="checkbox" data-setting="firstDayVote" ${st.firstDayVote ? 'checked' : ''}></label>
     <label>เปิดเผยบทบาทเมื่อตาย · Reveal role on death <input type="checkbox" data-setting="revealOnDeath" ${st.revealOnDeath ? 'checked' : ''}></label>
     <div class="actions"><button data-act="test-voice">🔊 ทดสอบเสียง · Test voice</button>
-      ${S.screen !== 'setup' ? '<button data-act="quit">จบเกมนี้ · End game</button>' : ''}</div>
+      ${!['home', 'setup'].includes(S.screen) ? '<button data-act="quit">จบเกมนี้ · End game</button>' : ''}</div>
   </div>`;
 }
 
