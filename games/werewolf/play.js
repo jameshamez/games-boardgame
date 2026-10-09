@@ -35,7 +35,13 @@ function renderJoin() {
     </form>`;
 }
 
+// มือถือ (Android) ไม่ยอมสั่นจนกว่าจะแตะหน้าเว็บสักครั้ง: ถ้าเข้าห้องเองโดยไม่ได้แตะ ให้ขึ้นปุ่มให้แตะ
+function askForTap() {
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) document.getElementById('unlock').hidden = false;
+}
+
 function showGame() {
+  askForTap();
   if (ui.el !== $app) ui.mount($app);
   if (!ui.view) ui.setView({ phase: 'lobby', name: PNet.name });
 }

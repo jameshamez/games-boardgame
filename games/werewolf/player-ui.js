@@ -44,7 +44,7 @@ function createPlayerUI(send) {
       U.actionId = id;
       U.sel = a && a.kind === 'vote' && a.myVote != null ? [a.myVote] : [];
       U.sent = '';
-      if (a && navigator.vibrate) navigator.vibrate([120, 60, 120]);
+      if (a && navigator.vibrate) navigator.vibrate([300, 150, 300]);
     }
     if (U.view && U.view.phase !== view.phase) U.cardOpen = false;
     if (view.talk) U.talkEnd = Date.now() + view.talk.left * 1000;
