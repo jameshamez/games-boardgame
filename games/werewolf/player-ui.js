@@ -131,7 +131,7 @@ function createPlayerUI(send) {
 
   function actionView(v) {
     const a = v.action;
-    const waiting = U.sent === U.actionId && a.kind !== 'vote';  // โหวตเปลี่ยนใจได้
+    const waiting = U.sent === U.actionId && !(a.kind === 'vote' && a.myVote !== undefined);
     const top = `<div class="stage tight"><div class="mid-icon">${a.icon || ''}</div><h2>${a.title}</h2>
       ${a.hint ? `<p class="muted">${a.hint}</p>` : ''}</div>`;
     if (waiting) return `${top}<div class="stage"><p class="muted">✓ ส่งแล้ว รอสักครู่…${enLine('Sent — please wait…')}</p></div>`;
@@ -168,9 +168,14 @@ function createPlayerUI(send) {
     if (a.kind === 'vote') {
       const voted = a.myVote !== undefined;
       const votedName = a.myVote == null ? 'งดออกเสียง (abstain)' : (a.candidates.find(c => c.id === a.myVote) || {}).name;
+      // โหวตแล้วเปลี่ยนไม่ได้: แสดงผลโหวตของตัวเองอย่างเดียว
+      if (voted) {
+        return `<div class="stage tight"><div class="mid-icon">🗳️</div><h2>${a.title}</h2></div>
+          <div class="stage"><div class="info-card"><p>คุณโหวต${enLine('Your vote')}</p><div class="big-text">🔒 ${escHtml(votedName || '')}</div></div>
+          <p class="muted">โหวตแล้วเปลี่ยนไม่ได้ — รอคนอื่นโหวต…${enLine('Votes are final — waiting for others…')}</p></div>`;
+      }
       return `<div class="stage tight"><div class="mid-icon">🗳️</div><h2>${a.title}</h2>
-        <p class="muted">${voted ? `คุณโหวต: <b>${escHtml(votedName || '')}</b> (เปลี่ยนได้จนกว่าจะสรุปผล)${enLine('You can change your vote until results are in')}`
-          : `เลือกคนที่คุณคิดว่าเป็นหมาป่า${enLine('Pick who you think is a werewolf')}`}</p></div>
+        <p class="muted">เลือกคนที่คุณคิดว่าเป็นหมาป่า — โหวตแล้วเปลี่ยนไม่ได้${enLine('Pick who you think is a werewolf — votes are final')}</p></div>
         ${playerButtons(a.candidates, 1)}
         <div class="actions">
           <button data-pact="vote" data-none="1">งดออกเสียง${enLine('Abstain')}</button>

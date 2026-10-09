@@ -1313,6 +1313,7 @@ function handlePlayerAction(pid, a) {
       if (alive().some(x => x.id === a.id)) return hunterResolve(a.id);
     }
     if (D.phase === 'vote' && !D.hostOverride && voteEligible().includes(p) && a.type === 'vote') {
+      if (p.id in D.votes) return;  // โหวตแล้วเปลี่ยนไม่ได้
       if (a.id !== null && !voteEligible().some(x => x.id === a.id && x.id !== p.id)) return;
       D.votes[p.id] = a.id;
       render();
