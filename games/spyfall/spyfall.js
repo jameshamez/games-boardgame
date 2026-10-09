@@ -96,8 +96,8 @@ setInterval(() => {
   if (S.screen === 'play' && !S.vote && !S.paused && remaining() === 0) startFinalVote();
 }, 500);
 
-function notify(text) {
-  S.notice = { seq: (S.notice ? S.notice.seq : 0) + 1, text };
+function notify(text, en = '') {
+  S.notice = { seq: (S.notice ? S.notice.seq : 0) + 1, text, en };
 }
 
 // ---------- เดินเกม ----------
@@ -109,14 +109,15 @@ function startRound() {
   if (!fresh.length) { S.used.clear(); fresh = pool; }
   S.location = fresh[Math.floor(Math.random() * fresh.length)];
   S.used.add(S.location.name);
-  S.locations = pool.map(l => ({ name: l.name, icon: l.icon }));
+  S.locations = pool.map(l => ({ name: l.name, en: l.en, icon: l.icon }));
 
   const spyIdx = Math.floor(Math.random() * S.joined.length);
-  const roles = shuffle(S.location.roles);
+  const roles = shuffle(S.location.roles.map((th, i) => ({ th, en: S.location.rolesEn[i] })));
   let k = 0;
   S.players = S.joined.map((j, id) => {
     const spy = id === spyIdx;
-    return { id, pid: j.pid, name: j.name, spy, role: spy ? null : roles[k++ % roles.length] };
+    const r = spy ? null : roles[k++ % roles.length];
+    return { id, pid: j.pid, name: j.name, spy, role: r && r.th, roleEn: r && r.en };
   });
   S.first = Math.floor(Math.random() * S.players.length);
   S.accused = new Set();
@@ -148,18 +149,21 @@ function voteAccuse(pid, seq, yes) {
   const p = byPid(pid);
   if (!V || V.kind !== 'accuse' || V.seq !== seq || !p || p.id === V.target || p.id in V.votes) return;
   V.votes[p.id] = !!yes;
-  if (!yes) return cancelAccusation(`${p.name} ไม่เห็นด้วย — การกล่าวหา ${byId(V.target).name} ไม่ผ่าน เล่นต่อ!`);
+  if (!yes) {
+    return cancelAccusation(`${p.name} ไม่เห็นด้วย — การกล่าวหา ${byId(V.target).name} ไม่ผ่าน เล่นต่อ!`,
+      `${p.name} disagreed — the accusation against ${byId(V.target).name} failed. Play on!`);
+  }
   const voters = S.players.filter(o => o.id !== V.target);
   if (voters.every(o => V.votes[o.id] === true)) return convict(V.target, V.by);
   render();
 }
 
-function cancelAccusation(text) {
+function cancelAccusation(text, en) {
   const V = S.vote;
   if (!V || V.kind !== 'accuse') return;
   S.vote = null;
   if (!V.wasPaused) resumeClock();
-  notify(text);
+  notify(text, en);
   render();
 }
 
@@ -192,16 +196,18 @@ function resolveFinal() {
   if (!S.vote || S.vote.kind !== 'final') return;
   const [top, second] = finalTally();
   if (top && (!second || second.n < top.n)) return convict(top.id, null);
-  finish('spy', 'หมดเวลาแล้ว แต่โหวตไม่ลงตัว — สายลับหนีรอดไปได้!');
+  finish('spy', 'หมดเวลาแล้ว แต่โหวตไม่ลงตัว — สายลับหนีรอดไปได้!', 'Time\'s up but the vote was split — the spy got away!');
 }
 
 function convict(targetId, accuserId) {
   const t = byId(targetId);
   if (t.spy) {
     const how = accuserId != null ? `${byId(accuserId).name} ชี้ตัว` : 'ทุกคนโหวต';
-    finish('agents', `${how} ${t.name} ถูกต้อง — จับสายลับได้!`, accuserId);
+    const howEn = accuserId != null ? `${byId(accuserId).name} pointed at` : 'Everyone voted for';
+    finish('agents', `${how} ${t.name} ถูกต้อง — จับสายลับได้!`, `${howEn} ${t.name} — correct, the spy is caught!`, accuserId);
   } else {
-    finish('spy', `${t.name} ไม่ใช่สายลับ! จับผิดคน — สายลับคือ ${spyPlayer().name}`);
+    finish('spy', `${t.name} ไม่ใช่สายลับ! จับผิดคน — สายลับคือ ${spyPlayer().name}`,
+      `${t.name} is not the spy! Wrong person — the spy was ${spyPlayer().name}`);
   }
 }
 
@@ -209,13 +215,14 @@ function convict(targetId, accuserId) {
 function spyGuess(pid, name) {
   const p = byPid(pid);
   if (S.screen !== 'play' || S.vote || !p || !p.spy || !S.locations.some(l => l.name === name)) return;
-  if (name === S.location.name) finish('spy', `สายลับ ${p.name} เดาถูกว่าทุกคนอยู่ที่ “${name}”!`, null, name);
-  else finish('agents', `สายลับ ${p.name} เดาว่า “${name}” แต่ผิด!`, null, name);
+  const en = (S.locations.find(l => l.name === name) || {}).en || name;
+  if (name === S.location.name) finish('spy', `สายลับ ${p.name} เดาถูกว่าทุกคนอยู่ที่ “${name}”!`, `Spy ${p.name} correctly guessed “${en}”!`, null, name);
+  else finish('agents', `สายลับ ${p.name} เดาว่า “${name}” แต่ผิด!`, `Spy ${p.name} guessed “${en}” — wrong!`, null, name);
 }
 
 /** จบรอบ แจกแต้ม: สายลับชนะ +2 (เดาถูก +4) · สายลับแพ้ ทุกคนที่เหลือ +1 คนชี้ตัวถูก +2 */
-function finish(winner, text, accuserId = null, guess = null) {
-  S.result = { winner, text, guess };
+function finish(winner, text, en, accuserId = null, guess = null) {
+  S.result = { winner, text, en, guess };
   S.gained = {};
   const spy = spyPlayer();
   if (winner === 'spy') S.gained[spy.pid] = guess ? 4 : 2;
@@ -251,12 +258,12 @@ function viewFor(p) {
   if (S.screen === 'end') {
     const R = S.result;
     return {
-      phase: 'end', winner: R.winner, text: R.text,
+      phase: 'end', winner: R.winner, text: R.text, en: R.en,
       won: p.spy ? R.winner === 'spy' : R.winner === 'agents',
-      location: { name: S.location.name, icon: S.location.icon },
+      location: { name: S.location.name, en: S.location.en, icon: S.location.icon },
       spyName: spyPlayer().name,
       results: S.players.map(o => ({
-        name: o.name, spy: o.spy, role: o.role, isMe: o.id === p.id,
+        name: o.name, spy: o.spy, role: o.role, roleEn: o.roleEn, isMe: o.id === p.id,
         won: o.spy ? R.winner === 'spy' : R.winner === 'agents',
         gained: S.gained[o.pid] || 0, score: scoreOf(o),
       })).sort((a, b) => b.score - a.score),
@@ -266,7 +273,8 @@ function viewFor(p) {
     phase: 'play', key: roundKey(), remaining: remaining(), paused: S.paused,
     // สถานที่จริงส่งให้เฉพาะคนที่ไม่ใช่สายลับ
     me: { id: p.id, name: p.name, spy: p.spy, location: p.spy ? null : S.location.name,
-      icon: p.spy ? null : S.location.icon, role: p.role, score: scoreOf(p) },
+      locationEn: p.spy ? null : S.location.en, icon: p.spy ? null : S.location.icon,
+      role: p.role, roleEn: p.roleEn, score: scoreOf(p) },
     firstName: byId(S.first).name, firstIsMe: S.first === p.id,
     locations: S.locations,
     others: S.players.filter(o => o.id !== p.id).map(o => ({ id: o.id, name: o.name })),
@@ -304,24 +312,24 @@ function homeView() {
   return `
     <section class="hero">
       <div class="sp-logo">🕵️</div>
-      <h1>สายลับ</h1>
-      <p>ทุกคนรู้ว่าอยู่ที่ไหน ยกเว้นสายลับหนึ่งคน — ถามตอบกันให้จับสายลับได้ ก่อนเขาจะเดาสถานที่ออก!</p>
+      <h1>สายลับ${enLine('Spyfall')}</h1>
+      <p>ทุกคนรู้ว่าอยู่ที่ไหน ยกเว้นสายลับหนึ่งคน — ถามตอบกันให้จับสายลับได้ ก่อนเขาจะเดาสถานที่ออก!${enLine('Everyone knows the location except one spy — ask and answer to catch the spy before they guess it!')}</p>
     </section>
 
     <section class="panel home-card">
-      <h3>🏠 สร้างห้องใหม่</h3>
-      <input type="text" id="create-name" placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.name)}" autocomplete="nickname">
+      <h3>🏠 สร้างห้องใหม่ <small>Create a room</small></h3>
+      <input type="text" id="create-name" placeholder="ชื่อของคุณ · Your name" maxlength="20" value="${esc(S.name)}" autocomplete="nickname">
       ${S.error ? `<p class="warn">⚠️ ${esc(S.error)}</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="create">สร้างห้อง</button>
-      <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · คุณเล่นด้วย ไม่ต้องมีคนคุมเกม</small>
+      <button class="btn-primary btn-block btn-big" data-act="create">สร้างห้อง${enLine('Create room')}</button>
+      <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · คุณเล่นด้วย ไม่ต้องมีคนคุมเกม${enLine('You get a 6-digit room code for friends · you play too, no game master needed')}</small>
     </section>
 
     <section class="panel home-card">
-      <h3>🔑 เข้าร่วมห้อง</h3>
+      <h3>🔑 เข้าร่วมห้อง <small>Join a room</small></h3>
       <form id="join-room" class="stack">
-        <input type="text" name="code" maxlength="6" placeholder="เลขห้อง" autocapitalize="characters" autocomplete="off">
-        <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" autocomplete="nickname">
-        <button class="btn-block btn-big" type="submit">เข้าร่วม</button>
+        <input type="text" name="code" maxlength="6" placeholder="เลขห้อง · Room code" autocapitalize="characters" autocomplete="off">
+        <input type="text" name="name" placeholder="ชื่อของคุณ · Your name" maxlength="20" autocomplete="nickname">
+        <button class="btn-block btn-big" type="submit">เข้าร่วม${enLine('Join')}</button>
       </form>
     </section>`;
 }
@@ -329,73 +337,73 @@ function homeView() {
 function lobbyView() {
   const n = S.joined.length;
   const join = Net.error ? `<p class="warn">⚠️ ${Net.error}</p>`
-    : !Net.room ? '<p class="muted">กำลังเปิดห้อง…</p>'
+    : !Net.room ? '<p class="muted">กำลังเปิดห้อง… · Opening room…</p>'
     : `<div class="join-box">
         <div id="qr" class="qr" data-url="${esc(Net.joinUrl())}"></div>
         <div class="join-info">
-          <p>เลขห้อง</p>
+          <p>เลขห้อง · Room code</p>
           <b class="room-code big">${Net.room}</b>
-          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR</p>
+          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR${enLine('Friends open this site › Join a room › enter the code, or scan the QR')}</p>
           <code>${esc(Net.joinUrl())}</code>
         </div>
       </div>`;
   const all = Object.values(LOCATION_PACKS).reduce((a, p) => a + p.list.length, 0);
-  const packs = [['mix', { name: 'คละทุกชุด', icon: '🎲', desc: `ทั้งหมด ${all} สถานที่` }],
-    ...Object.entries(LOCATION_PACKS).map(([id, p]) => [id, { ...p, desc: `${p.desc} · ${p.list.length} แห่ง` }])];
+  const packs = [['mix', { name: 'คละทุกชุด', en: 'Mix all', icon: '🎲', desc: `ทั้งหมด ${all} สถานที่`, descEn: `All ${all} locations` }],
+    ...Object.entries(LOCATION_PACKS).map(([id, p]) => [id, { ...p, desc: `${p.desc} · ${p.list.length} แห่ง`, descEn: `${p.descEn} · ${p.list.length} places` }])];
   return `
-    <button class="btn-ghost small-btn back-home" data-act="close">← ปิดห้อง</button>
+    <button class="btn-ghost small-btn back-home" data-act="close">← ปิดห้อง · Close room</button>
     <section class="panel">
-      <strong>ผู้เล่น (${n} คน)</strong>
+      <strong>ผู้เล่น (${n} คน) · Players (${n})</strong>
       ${join}
       <div class="name-list">
         ${S.joined.map((j, i) => `
           <div class="row name-row">
             <span class="seat">${i + 1}</span>
-            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name)}${j.local ? ' <small class="muted">· คุณ</small>' : ''}${S.scores[j.pid] ? ` <small class="sp-pts">${S.scores[j.pid]} แต้ม</small>` : ''}</span>
-            ${j.local ? '' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ">✕</button>`}
+            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name)}${j.local ? ' <small class="muted">· คุณ · you</small>' : ''}${S.scores[j.pid] ? ` <small class="sp-pts">${S.scores[j.pid]} แต้ม · pts</small>` : ''}</span>
+            ${j.local ? '' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ · Remove">✕</button>`}
           </div>`).join('')}
       </div>
     </section>
 
     <section class="panel">
-      <strong>ชุดสถานที่</strong>
+      <strong>ชุดสถานที่ · Location set</strong>
       <div class="sp-packs">${packs.map(([id, p]) => `
         <button class="sp-pack ${S.settings.pack === id ? 'on' : ''}" data-act="pack" data-id="${id}">
-          <span class="sp-pack-icon">${p.icon}</span><b>${p.name}</b><small>${p.desc}</small>
+          <span class="sp-pack-icon">${p.icon}</span><b>${p.name} · ${p.en}</b><small>${p.desc}${enLine(p.descEn)}</small>
         </button>`).join('')}
       </div>
       <div class="sp-settings">
-        <label>เวลาต่อรอบ
+        <label>เวลาต่อรอบ · Round time
           <select data-setting="minutes">${TIME_OPTIONS.map(m =>
-            `<option value="${m}" ${S.settings.minutes === m ? 'selected' : ''}>${m} นาที</option>`).join('')}</select></label>
-        ${Object.keys(S.scores).length ? '<button class="small-btn" data-act="reset-scores">🧹 ล้างแต้มสะสม</button>' : ''}
+            `<option value="${m}" ${S.settings.minutes === m ? 'selected' : ''}>${m} นาที · min</option>`).join('')}</select></label>
+        ${Object.keys(S.scores).length ? '<button class="small-btn" data-act="reset-scores">🧹 ล้างแต้มสะสม · Reset scores</button>' : ''}
       </div>
     </section>
 
     <div class="start-bar">
-      ${n < MIN_PLAYERS ? `<p class="warn">ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🕵️ เริ่มเกม · แจกบทบาท</button>
+      ${n < MIN_PLAYERS ? `<p class="warn">ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)${enLine(`Need at least ${MIN_PLAYERS} players (now ${n})`)}</p>` : ''}
+      <button class="btn-primary btn-block btn-big" data-act="start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🕵️ เริ่มเกม · แจกบทบาท${enLine('Start game · deal roles')}</button>
     </div>`;
 }
 
 function hostBar() {
   if (S.screen === 'end') {
     return `<div class="sp-hostbar">
-      <button class="btn-primary" data-act="again">🔁 เล่นรอบต่อไป</button>
-      <button data-act="to-lobby">⚙️ กลับห้อง (เปลี่ยนตั้งค่า)</button>
+      <button class="btn-primary" data-act="again">🔁 เล่นรอบต่อไป · Next round</button>
+      <button data-act="to-lobby">⚙️ กลับห้อง (เปลี่ยนตั้งค่า) · Back to room</button>
     </div>`;
   }
   const V = S.vote;
   if (V && V.kind === 'accuse') {
-    return `<div class="sp-hostbar floating"><button data-act="cancel-accuse">✖️ ยกเลิกการกล่าวหา</button></div>`;
+    return `<div class="sp-hostbar floating"><button data-act="cancel-accuse">✖️ ยกเลิกการกล่าวหา · Cancel accusation</button></div>`;
   }
   if (V && V.kind === 'final') {
-    return `<div class="sp-hostbar floating"><span class="muted">โหวตแล้ว ${Object.keys(V.votes).length}/${S.players.length} คน</span>
-      <button class="btn-primary" data-act="resolve">⚖️ สรุปผลโหวต</button></div>`;
+    return `<div class="sp-hostbar floating"><span class="muted">โหวตแล้ว · Voted ${Object.keys(V.votes).length}/${S.players.length}</span>
+      <button class="btn-primary" data-act="resolve">⚖️ สรุปผลโหวต · Close the vote</button></div>`;
   }
   return `<div class="sp-hostbar">
-    <button data-act="pause">${S.paused ? '▶️ ต่อ' : '⏸ หยุดเวลา'}</button>
-    <button data-act="time-up">⏰ หมดเวลา · โหวตเลย</button>
+    <button data-act="pause">${S.paused ? '▶️ ต่อ · Resume' : '⏸ หยุดเวลา · Pause'}</button>
+    <button data-act="time-up">⏰ หมดเวลา · โหวตเลย${enLine('Time\'s up · vote now')}</button>
   </div>`;
 }
 
@@ -426,7 +434,7 @@ document.addEventListener('click', e => {
   const ACTIONS = {
     create() {
       const name = ($app.querySelector('#create-name')?.value || '').trim();
-      if (!name) { S.error = 'ใส่ชื่อของคุณก่อน'; return render(); }
+      if (!name) { S.error = 'ใส่ชื่อของคุณก่อน · Enter your name first'; return render(); }
       S.error = '';
       S.name = name;
       store.set('name', name);
@@ -438,7 +446,7 @@ document.addEventListener('click', e => {
       render();
     },
     close() {
-      if (S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่')) return;
+      if (S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่\nClose this room? Friends will need to join a new one.')) return;
       Net.stop();
       setInRoom(false);
       S.joined = [];
@@ -446,7 +454,7 @@ document.addEventListener('click', e => {
       S.screen = 'home';
       render();
     },
-    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?')) Net.kick(btn.dataset.pid); },
+    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?\nRemove this player from the room?')) Net.kick(btn.dataset.pid); },
     pack() {
       S.settings.pack = btn.dataset.id;
       store.set('settings', S.settings);
@@ -457,8 +465,8 @@ document.addEventListener('click', e => {
     again: startRound,
     'to-lobby'() { S.screen = 'lobby'; render(); },
     pause() { if (S.paused) resumeClock(); else pauseClock(); render(); },
-    'time-up'() { if (confirm('จบการถามตอบ แล้วให้ทุกคนโหวตหาสายลับเลย?')) startFinalVote(); },
-    'cancel-accuse'() { cancelAccusation('คนสร้างห้องยกเลิกการกล่าวหา — เล่นต่อ!'); },
+    'time-up'() { if (confirm('จบการถามตอบ แล้วให้ทุกคนโหวตหาสายลับเลย?\nEnd the questions and have everyone vote for the spy now?')) startFinalVote(); },
+    'cancel-accuse'() { cancelAccusation('คนสร้างห้องยกเลิกการกล่าวหา — เล่นต่อ!', 'The host cancelled the accusation — play on!'); },
     resolve: resolveFinal,
   };
   ACTIONS[act]?.();
@@ -481,8 +489,8 @@ document.addEventListener('submit', e => {
     e.target.querySelector('.warn')?.remove();
     e.target.insertAdjacentHTML('beforeend', `<p class="warn">⚠️ ${msg}</p>`);
   };
-  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง');
-  if (!name) return warn('ใส่ชื่อของคุณก่อน');
+  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง · Invalid room code — ask the host for it');
+  if (!name) return warn('ใส่ชื่อของคุณก่อน · Enter your name first');
   location.href = `play.html?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 });
 

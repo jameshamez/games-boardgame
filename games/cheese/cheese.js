@@ -26,12 +26,12 @@ function setInRoom(on) {
 }
 
 const ROLES = {
-  mouse: { name: 'หนูขี้เซา', icon: '🐭', team: 'mice', teamName: '🐭 ฝ่ายหนู',
-    desc: 'ตื่นตามเวลาบนลูกเต๋า แล้วจำให้ดีว่าเห็นอะไร ช่วยกันหาตัวหัวขโมยตอนเช้า' },
-  thief: { name: 'หัวขโมยชีส', icon: '🐀', team: 'thief', teamName: '🧀 ฝ่ายหัวขโมย',
-    desc: 'คุณจะขโมยชีสตอนที่ตัวเองตื่น ใครตื่นพร้อมกันจะเห็น! ตอนเช้าต้องเนียนให้รอดจากการโหวต' },
-  accomplice: { name: 'ผู้สมรู้ร่วมคิด', icon: '🤝', team: 'thief', teamName: '🧀 ฝ่ายหัวขโมย',
-    desc: 'หัวขโมยเลือกคุณเป็นพวก คุณชนะถ้าหัวขโมยรอด (แต่คุณไม่รู้ว่าหัวขโมยคือใคร)' },
+  mouse: { name: 'หนูขี้เซา · Sleepy Mouse', icon: '🐭', team: 'mice', teamName: '🐭 ฝ่ายหนู · Mice',
+    desc: `ตื่นตามเวลาบนลูกเต๋า แล้วจำให้ดีว่าเห็นอะไร ช่วยกันหาตัวหัวขโมยตอนเช้า${enLine('Wake at your die\'s hour, remember what you see, and find the thief in the morning')}` },
+  thief: { name: 'หัวขโมยชีส · Cheese Thief', icon: '🐀', team: 'thief', teamName: '🧀 ฝ่ายหัวขโมย · Thief',
+    desc: `คุณจะขโมยชีสตอนที่ตัวเองตื่น ใครตื่นพร้อมกันจะเห็น! ตอนเช้าต้องเนียนให้รอดจากการโหวต${enLine('You steal the cheese when you wake — anyone awake with you sees it! Blend in and survive the vote')}` },
+  accomplice: { name: 'ผู้สมรู้ร่วมคิด · Accomplice', icon: '🤝', team: 'thief', teamName: '🧀 ฝ่ายหัวขโมย · Thief',
+    desc: `หัวขโมยเลือกคุณเป็นพวก คุณชนะถ้าหัวขโมยรอด (แต่คุณไม่รู้ว่าหัวขโมยคือใคร)${enLine('The thief picked you as a partner — you win if the thief survives (but you don\'t know who it is)')}` },
 };
 
 const S = {
@@ -201,12 +201,15 @@ function noteAwake(awake, h) {
   for (const p of awake) {
     const others = awake.filter(o => o !== p).map(o => esc(o.name));
     if (p.role === 'thief') {
-      p.notes.push(`ตี ${h}: คุณขโมยชีส${others.length ? ` — แต่ <b>${others.join(', ')}</b> เห็นคุณ!` : ' โดยไม่มีใครเห็น'}`);
+      p.notes.push(`ตี ${h}: คุณขโมยชีส${others.length ? ` — แต่ <b>${others.join(', ')}</b> เห็นคุณ!` : ' โดยไม่มีใครเห็น'}`
+        + enLine(`${h} o'clock: you stole the cheese${others.length ? ` — but ${others.join(', ')} saw you!` : ' and nobody saw'}`));
     } else if (th) {
-      p.notes.push(`ตี ${h}: เห็น <b>${esc(th.name)}</b> ขโมยชีส!`);
+      p.notes.push(`ตี ${h}: เห็น <b>${esc(th.name)}</b> ขโมยชีส!${enLine(`${h} o'clock: you saw ${esc(th.name)} steal the cheese!`)}`);
     } else {
       const cheese = S.cheeseHour ? 'ชีสหายไปแล้ว' : 'ชีสยังอยู่';
-      p.notes.push(`ตี ${h}: ตื่น${others.length ? `พร้อม <b>${others.join(', ')}</b>` : 'คนเดียว'} · ${cheese}`);
+      const cheeseEn = S.cheeseHour ? 'the cheese is gone' : 'the cheese is still there';
+      p.notes.push(`ตี ${h}: ตื่น${others.length ? `พร้อม <b>${others.join(', ')}</b>` : 'คนเดียว'} · ${cheese}`
+        + enLine(`${h} o'clock: awake ${others.length ? `with ${others.join(', ')}` : 'alone'} · ${cheeseEn}`));
     }
   }
 }
@@ -216,7 +219,7 @@ function peek(p, targetId) {
   const t = byId(targetId);
   if (!t || t === p || N.peeked[p.id] || N.awake.length !== 1) return;
   N.peeked[p.id] = { name: t.name, die: t.die };
-  p.notes.push(`แอบดูลูกเต๋าของ <b>${esc(t.name)}</b>: ได้เลข ${t.die}`);
+  p.notes.push(`แอบดูลูกเต๋าของ <b>${esc(t.name)}</b>: ได้เลข ${t.die}${enLine(`Peeked at ${esc(t.name)}'s die: ${t.die}`)}`);
   render();
 }
 
@@ -227,9 +230,9 @@ function pickAccomplices(ids) {
   if (chosen.length !== N.count) return;
   chosen.forEach(p => {
     p.role = 'accomplice';
-    p.notes.push('หัวขโมยเลือกคุณเป็น <b>ผู้สมรู้ร่วมคิด</b> — คุณชนะถ้าหัวขโมยรอด');
+    p.notes.push(`หัวขโมยเลือกคุณเป็น <b>ผู้สมรู้ร่วมคิด</b> — คุณชนะถ้าหัวขโมยรอด${enLine('The thief chose you as an accomplice — you win if the thief survives')}`);
   });
-  th.notes.push(`ผู้สมรู้ร่วมคิดของคุณ: <b>${chosen.map(p => esc(p.name)).join(', ')}</b>`);
+  th.notes.push(`ผู้สมรู้ร่วมคิดของคุณ: <b>${chosen.map(p => esc(p.name)).join(', ')}</b>${enLine(`Your accomplice(s): ${chosen.map(p => esc(p.name)).join(', ')}`)}`);
   N.done.add(th.id);
   render();
 }
@@ -287,7 +290,7 @@ async function resolveVote() {
   const th = thief();
   // หัวขโมยได้คะแนนมากที่สุด (เสมอก็นับ) = จับได้
   S.winner = max > 0 && top.includes(th.id) ? 'mice' : 'thief';
-  S.tally = Object.entries(t).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${byId(Number(k)).name} ${v}`).join(', ') || 'ไม่มีใครถูกโหวต';
+  S.tally = Object.entries(t).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${byId(Number(k)).name} ${v}`).join(', ') || 'ไม่มีใครถูกโหวต · No votes';
   const id = newRun();
   S.screen = 'end';
   render();
@@ -399,40 +402,40 @@ function render() {
 /** ส่วนที่ทุกคนเห็นได้ (ไม่มีความลับ) */
 function hostStrip() {
   if (S.screen === 'reveal') {
-    return `<div class="stage tight"><h2>ดูบทบาทและลูกเต๋าของตัวเอง</h2>
+    return `<div class="stage tight"><h2>ดูบทบาทและลูกเต๋าของตัวเอง${enLine('Check your role and die')}</h2>
       <div class="alive-bar">${S.players.map(p =>
         `<span class="chip ${S.ready.has(p.id) ? 'ready' : ''}">${S.ready.has(p.id) ? '✓' : '⏳'} ${esc(p.name)}</span>`).join('')}</div>
-      <button class="btn-primary btn-block" data-act="night">🌙 เริ่มกลางคืน (${S.ready.size}/${S.players.length} พร้อม)</button></div>`;
+      <button class="btn-primary btn-block" data-act="night">🌙 เริ่มกลางคืน (${S.ready.size}/${S.players.length} พร้อม)${enLine(`Start the night (${S.ready.size}/${S.players.length} ready)`)}</button></div>`;
   }
   if (S.screen === 'night') {
     const h = S.night && S.night.hour;
-    return `<div class="phase-head">🌙 ${h ? `ตี ${h}` : 'กลางคืน'}</div><div class="ch-clock">${[1, 2, 3, 4, 5, 6].map(i =>
+    return `<div class="phase-head">🌙 ${h ? `ตี ${h} · ${h} o'clock` : 'กลางคืน · Night'}</div><div class="ch-clock">${[1, 2, 3, 4, 5, 6].map(i =>
       `<span class="${i === h ? 'now' : i < h ? 'past' : ''}">${i}</span>`).join('')}</div>${subtitleBox()}`;
   }
   if (S.screen === 'day') {
     const D = S.day;
     if (D.phase === 'talk') {
-      return `<div class="phase-head">☀️ ตอนเช้า</div>
-        <div class="stage tight"><div class="timer-ring ${D.left <= 30 ? 'low' : ''}"><div class="timer" id="timer">${fmt(D.left)}</div><small>เวลาคุย</small></div>
+      return `<div class="phase-head">☀️ ตอนเช้า · Morning</div>
+        <div class="stage tight"><div class="timer-ring ${D.left <= 30 ? 'low' : ''}"><div class="timer" id="timer">${fmt(D.left)}</div><small>เวลาคุย · Discussion</small></div>
         ${subtitleBox()}
-        <div class="actions"><button data-act="pause">${D.paused ? '▶️ ต่อ' : '⏸ หยุด'}</button><button data-act="add">+30 วิ</button>
-        <button class="btn-primary" data-act="vote">🗳️ ไปโหวตเลย</button></div></div>`;
+        <div class="actions"><button data-act="pause">${D.paused ? '▶️ ต่อ · Resume' : '⏸ หยุด · Pause'}</button><button data-act="add">+30 วิ · s</button>
+        <button class="btn-primary" data-act="vote">🗳️ ไปโหวตเลย · Vote now</button></div></div>`;
     }
     if (D.phase === 'vote') {
       const t = tally();
       const voted = Object.keys(D.votes).length;
-      return `<div class="phase-head">☀️ โหวต</div>${subtitleBox()}
+      return `<div class="phase-head">☀️ โหวต · Vote</div>${subtitleBox()}
         <div class="tally">${S.players.map(p => ({ p, n: t[p.id] || 0 })).sort((a, b) => b.n - a.n).map(({ p, n }) => `
           <div class="tally-row"><span class="t-name">${esc(p.name)}</span>
             <span class="t-bar"><i style="width:${S.players.length ? (n / S.players.length) * 100 : 0}%"></i></span><b>${n}</b></div>`).join('')}</div>
-        <p class="muted" style="text-align:center">โหวตแล้ว ${voted}/${S.players.length} คน</p>
-        <button class="btn-primary btn-block" data-act="resolve">⚖️ สรุปผลโหวต</button>`;
+        <p class="muted" style="text-align:center">โหวตแล้ว · Voted ${voted}/${S.players.length}</p>
+        <button class="btn-primary btn-block" data-act="resolve">⚖️ สรุปผลโหวต · Close the vote</button>`;
     }
-    return `<div class="phase-head">☀️ ตอนเช้า</div>${subtitleBox()}`;
+    return `<div class="phase-head">☀️ ตอนเช้า · Morning</div>${subtitleBox()}`;
   }
   if (S.screen === 'end') {
-    return `<div class="actions"><button class="btn-primary" data-act="again">🔁 เล่นอีกรอบ</button>
-      <button data-act="to-lobby">⚙️ กลับห้อง</button></div>`;
+    return `<div class="actions"><button class="btn-primary" data-act="again">🔁 เล่นอีกรอบ · Play again</button>
+      <button data-act="to-lobby">⚙️ กลับห้อง · Back to room</button></div>`;
   }
   return '';
 }
@@ -441,22 +444,22 @@ function homeView() {
   return `
     <section class="hero">
       <div class="ch-logo">🧀</div>
-      <h1>หนูขโมยชีส</h1>
-      <p>มีหัวขโมยแอบซ่อนอยู่ในหมู่หนู ทุกคนตื่นตามเลขลูกเต๋า แล้วช่วยกันหาว่าใครขโมยชีสไป!</p>
+      <h1>หนูขโมยชีส${enLine('Cheese Thief')}</h1>
+      <p>มีหัวขโมยแอบซ่อนอยู่ในหมู่หนู ทุกคนตื่นตามเลขลูกเต๋า แล้วช่วยกันหาว่าใครขโมยชีสไป!${enLine('A thief hides among the mice. Everyone wakes at their die\'s hour — then work out who stole the cheese!')}</p>
     </section>
     <section class="panel home-card">
-      <h3>🏠 สร้างห้องใหม่</h3>
-      <input type="text" id="create-name" placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.name)}" autocomplete="nickname">
+      <h3>🏠 สร้างห้องใหม่ <small>Create a room</small></h3>
+      <input type="text" id="create-name" placeholder="ชื่อของคุณ · Your name" maxlength="20" value="${esc(S.name)}" autocomplete="nickname">
       ${S.error ? `<p class="warn">⚠️ ${esc(S.error)}</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="create">สร้างห้อง</button>
-      <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · เครื่องของคุณพากย์เสียง และคุณก็เล่นด้วย</small>
+      <button class="btn-primary btn-block btn-big" data-act="create">สร้างห้อง${enLine('Create room')}</button>
+      <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · เครื่องของคุณพากย์เสียง และคุณก็เล่นด้วย${enLine('You get a 6-digit room code for friends · your device narrates and you play too')}</small>
     </section>
     <section class="panel home-card">
-      <h3>🔑 เข้าร่วมห้อง</h3>
+      <h3>🔑 เข้าร่วมห้อง <small>Join a room</small></h3>
       <form id="join-room" class="stack">
-        <input type="text" name="code" maxlength="6" placeholder="เลขห้อง" autocapitalize="characters" autocomplete="off">
-        <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" autocomplete="nickname">
-        <button class="btn-block btn-big" type="submit">เข้าร่วม</button>
+        <input type="text" name="code" maxlength="6" placeholder="เลขห้อง · Room code" autocapitalize="characters" autocomplete="off">
+        <input type="text" name="name" placeholder="ชื่อของคุณ · Your name" maxlength="20" autocomplete="nickname">
+        <button class="btn-block btn-big" type="submit">เข้าร่วม${enLine('Join')}</button>
       </form>
     </section>`;
 }
@@ -465,53 +468,53 @@ function lobbyView() {
   const n = S.joined.length;
   const acc = accompliceCount(n);
   const join = Net.error ? `<p class="warn">⚠️ ${Net.error}</p>`
-    : !Net.room ? '<p class="muted">กำลังเปิดห้อง…</p>'
+    : !Net.room ? '<p class="muted">กำลังเปิดห้อง… · Opening room…</p>'
     : `<div class="join-box">
         <div id="qr" class="qr" data-url="${esc(Net.joinUrl())}"></div>
         <div class="join-info">
-          <p>เลขห้อง</p>
+          <p>เลขห้อง · Room code</p>
           <b class="room-code big">${Net.room}</b>
-          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR</p>
+          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR${enLine('Friends open this site › Join a room › enter the code, or scan the QR')}</p>
           <code>${esc(Net.joinUrl())}</code>
         </div>
       </div>`;
   return `
-    <button class="btn-ghost small-btn back-home" data-act="close">← ปิดห้อง</button>
+    <button class="btn-ghost small-btn back-home" data-act="close">← ปิดห้อง · Close room</button>
     <section class="panel">
-      <strong>ผู้เล่น (${n} คน)</strong>
+      <strong>ผู้เล่น (${n} คน) · Players (${n})</strong>
       ${join}
       <div class="name-list">
         ${S.joined.map((j, i) => `
           <div class="row name-row">
             <span class="seat">${i + 1}</span>
-            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name)}${j.local ? ' <small class="muted">· คุณ</small>' : ''}</span>
-            ${j.local ? '' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ">✕</button>`}
+            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name)}${j.local ? ' <small class="muted">· คุณ · you</small>' : ''}</span>
+            ${j.local ? '' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ · Remove">✕</button>`}
           </div>`).join('')}
       </div>
     </section>
     <section class="panel">
-      <strong>ตั้งค่า</strong>
+      <strong>ตั้งค่า · Settings</strong>
       <div class="fw-settings">
-        <label>ผู้สมรู้ร่วมคิด
+        <label>ผู้สมรู้ร่วมคิด · Accomplices
           <select data-setting="accomplices">
-            <option value="auto" ${S.settings.accomplices === 'auto' ? 'selected' : ''}>อัตโนมัติ (6 คนขึ้นไปมี 1 คน)</option>
-            ${[0, 1, 2].map(k => `<option value="${k}" ${String(S.settings.accomplices) === String(k) ? 'selected' : ''}>${k} คน</option>`).join('')}
+            <option value="auto" ${S.settings.accomplices === 'auto' ? 'selected' : ''}>อัตโนมัติ (6 คนขึ้นไปมี 1 คน) · Auto (1 with 6+ players)</option>
+            ${[0, 1, 2].map(k => `<option value="${k}" ${String(S.settings.accomplices) === String(k) ? 'selected' : ''}>${k} คน · ${k}</option>`).join('')}
           </select></label>
-        <label>เวลาคุยตอนเช้า
+        <label>เวลาคุยตอนเช้า · Morning discussion
           <select data-setting="talkSec">${TALK_OPTIONS.map(s =>
             `<option value="${s}" ${S.settings.talkSec === s ? 'selected' : ''}>${minutesText(s)}</option>`).join('')}</select></label>
-        <label>ภาษาพากย์
+        <label>ภาษาพากย์ · Narration language
           <select data-setting="lang">${[['both', 'ไทย + English'], ['th', 'ไทย'], ['en', 'English']].map(([v, t]) =>
             `<option value="${v}" ${S.settings.lang === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
       </div>
       <label class="host-play"><input type="checkbox" data-voiceall ${S.settings.voiceAll ? 'checked' : ''}>
-        <span>🔊 พากย์เสียงบนทุกเครื่อง<small>ถ้านั่งด้วยกัน ปิดไว้ให้พากย์แค่เครื่องนี้จะได้ไม่เสียงซ้อน</small></span></label>
-      <p class="muted small">ตอนนี้: หัวขโมย 1 · ผู้สมรู้ร่วมคิด ${acc} · หนู ${Math.max(n - 1, 0)}</p>
-      <button class="small-btn btn-ghost" data-act="test-voice">🔊 ทดสอบเสียง</button>
+        <span>🔊 พากย์เสียงบนทุกเครื่อง · Narrate on every phone<small>ถ้านั่งด้วยกัน ปิดไว้ให้พากย์แค่เครื่องนี้จะได้ไม่เสียงซ้อน${enLine('If you sit together, turn off so only this device narrates (no echo)')}</small></span></label>
+      <p class="muted small">ตอนนี้: หัวขโมย 1 · ผู้สมรู้ร่วมคิด ${acc} · หนู ${Math.max(n - 1, 0)}${enLine(`Now: 1 thief · ${acc} accomplice(s) · ${Math.max(n - 1, 0)} mice`)}</p>
+      <button class="small-btn btn-ghost" data-act="test-voice">🔊 ทดสอบเสียง · Test voice</button>
     </section>
     <div class="start-bar">
-      ${n < MIN_PLAYERS ? `<p class="warn">ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🧀 เริ่มเกม · แจกบทบาท</button>
+      ${n < MIN_PLAYERS ? `<p class="warn">ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)${enLine(`Need at least ${MIN_PLAYERS} players (now ${n})`)}</p>` : ''}
+      <button class="btn-primary btn-block btn-big" data-act="start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🧀 เริ่มเกม · แจกบทบาท${enLine('Start game · deal roles')}</button>
     </div>`;
 }
 
@@ -532,7 +535,7 @@ document.addEventListener('click', e => {
   const ACTIONS = {
     create() {
       const name = ($app.querySelector('#create-name')?.value || '').trim();
-      if (!name) { S.error = 'ใส่ชื่อของคุณก่อน'; return render(); }
+      if (!name) { S.error = 'ใส่ชื่อของคุณก่อน · Enter your name first'; return render(); }
       S.error = '';
       S.name = name;
       store.set('name', name);
@@ -545,7 +548,7 @@ document.addEventListener('click', e => {
       render();
     },
     close() {
-      if (S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่')) return;
+      if (S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่\nClose this room? Friends will need to join a new one.')) return;
       newRun();
       Net.stop();
       setInRoom(false);
@@ -553,7 +556,7 @@ document.addEventListener('click', e => {
       S.screen = 'home';
       render();
     },
-    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?')) Net.kick(btn.dataset.pid); },
+    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?\nRemove this player from the room?')) Net.kick(btn.dataset.pid); },
     'test-voice'() { Voice.unlock(); narrate(LINES.test); },
     start: startGame,
     again: startGame,
@@ -590,8 +593,8 @@ document.addEventListener('submit', e => {
     e.target.querySelector('.warn')?.remove();
     e.target.insertAdjacentHTML('beforeend', `<p class="warn">⚠️ ${msg}</p>`);
   };
-  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง');
-  if (!name) return warn('ใส่ชื่อของคุณก่อน');
+  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง · Invalid room code — ask the host for it');
+  if (!name) return warn('ใส่ชื่อของคุณก่อน · Enter your name first');
   location.href = `play.html?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 });
 

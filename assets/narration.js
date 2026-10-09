@@ -54,7 +54,7 @@ function setupNarration(pnet) {
 
   function renderMute() {
     $mute.textContent = Narr.muted ? '🔇' : '🔊';
-    $mute.title = Narr.muted ? 'เปิดเสียงพากย์' : 'ปิดเสียงพากย์';
+    $mute.title = Narr.muted ? 'เปิดเสียงพากย์ · Unmute narration' : 'ปิดเสียงพากย์ · Mute narration';
   }
   $mute.addEventListener('click', () => {
     Narr.muted = !Narr.muted;

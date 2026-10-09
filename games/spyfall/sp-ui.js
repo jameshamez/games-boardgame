@@ -2,6 +2,9 @@
 // หน้าจอผู้เล่นของเกมสายลับ — ใช้ทั้งบนมือถือ (play.html) และบนเครื่องคนสร้างห้อง (index.html)
 // แค่แสดงหน้าจอที่เครื่องคนสร้างห้องส่งมา แล้วส่งการกดกลับผ่าน send(action)
 
+/** บรรทัดภาษาอังกฤษตัวเล็กใต้ข้อความไทย */
+const enLine = s => `<span class="en-line">${s}</span>`;
+
 function createSpUI(send) {
   const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const U = {
@@ -118,86 +121,87 @@ function createSpUI(send) {
     return `<div class="sp-locs">${v.locations.map(l => {
       const cls = pickable ? (U.sel === l.name ? 'selected' : '') : (U.crossed.has(l.name) ? 'crossed' : '');
       return `<button class="sp-loc ${cls}" data-sp="${pickable ? 'pick' : 'cross'}" data-name="${esc(l.name)}">
-        <span>${l.icon}</span>${esc(l.name)}</button>`;
+        <span>${l.icon}</span><span>${esc(l.name)}${enLine(esc(l.en || ''))}</span></button>`;
     }).join('')}</div>`;
   }
 
   function roleCard(me) {
     if (!U.cardOpen) {
       return `<button class="sp-card closed" data-sp="card">
-        <div class="sp-card-icon">🔒</div><b>แตะเพื่อดูบทบาท</b><small>อย่าให้คนข้าง ๆ เห็น</small></button>`;
+        <div class="sp-card-icon">🔒</div><b>แตะเพื่อดูบทบาท${enLine('Tap to see your role')}</b><small>อย่าให้คนข้าง ๆ เห็น · Don't let others see</small></button>`;
     }
     if (me.spy) {
       return `<button class="sp-card spy" data-sp="card">
-        <div class="sp-card-icon">🕵️</div><div class="sp-card-loc">คุณคือสายลับ!</div>
-        <small>ฟังคำถามคำตอบให้ดี แล้วเดาว่าทุกคนอยู่ที่ไหน — อย่าให้ใครจับได้</small>
-        <small class="sp-card-hide">แตะเพื่อซ่อน</small></button>`;
+        <div class="sp-card-icon">🕵️</div><div class="sp-card-loc">คุณคือสายลับ!${enLine('You are the spy!')}</div>
+        <small>ฟังคำถามคำตอบให้ดี แล้วเดาว่าทุกคนอยู่ที่ไหน — อย่าให้ใครจับได้${enLine('Listen closely and work out where everyone is — don\'t get caught')}</small>
+        <small class="sp-card-hide">แตะเพื่อซ่อน · Tap to hide</small></button>`;
     }
     return `<button class="sp-card agent" data-sp="card">
-      <div class="sp-card-icon">${me.icon}</div><small>สถานที่</small><div class="sp-card-loc">${esc(me.location)}</div>
-      <div class="sp-card-role">บทบาทของคุณ: <b>${esc(me.role)}</b></div>
-      <small class="sp-card-hide">แตะเพื่อซ่อน</small></button>`;
+      <div class="sp-card-icon">${me.icon}</div><small>สถานที่ · Location</small><div class="sp-card-loc">${esc(me.location)}${enLine(esc(me.locationEn || ''))}</div>
+      <div class="sp-card-role">บทบาทของคุณ · Your role: <b>${esc(me.role)}</b>${enLine(esc(me.roleEn || ''))}</div>
+      <small class="sp-card-hide">แตะเพื่อซ่อน · Tap to hide</small></button>`;
   }
 
   function notice(v) {
     if (!v.notice || Date.now() > U.noticeUntil) return '';
-    return `<div class="sp-notice" data-sp="dismiss">📢 ${esc(v.notice.text)}</div>`;
+    return `<div class="sp-notice" data-sp="dismiss">📢 ${esc(v.notice.text)}${v.notice.en ? enLine(esc(v.notice.en)) : ''}</div>`;
   }
 
   function voteOverlay(v) {
     const V = v.vote;
     if (!V) return '';
     if (V.kind === 'accuse') {
-      const progress = `<p class="muted">เห็นด้วยแล้ว ${V.yes}/${V.need} คน · ต้องเห็นด้วยทุกคนจึงจับได้</p>`;
+      const progress = `<p class="muted">เห็นด้วยแล้ว ${V.yes}/${V.need} คน · ต้องเห็นด้วยทุกคนจึงจับได้${enLine(`${V.yes}/${V.need} agree · everyone must agree to catch`)}</p>`;
       if (V.targetIsMe) {
         return `<div class="sp-overlay danger"><div class="sp-ov-icon">😰</div>
-          <h2>คุณถูกกล่าวหา!</h2>
-          <p><b>${esc(V.byName)}</b> คิดว่าคุณคือสายลับ</p>
-          <p>อธิบายให้ทุกคนฟังว่าทำไมคุณไม่ใช่!</p>${progress}</div>`;
+          <h2>คุณถูกกล่าวหา!${enLine('You\'ve been accused!')}</h2>
+          <p><b>${esc(V.byName)}</b> คิดว่าคุณคือสายลับ${enLine(`${esc(V.byName)} thinks you are the spy`)}</p>
+          <p>อธิบายให้ทุกคนฟังว่าทำไมคุณไม่ใช่!${enLine('Explain to everyone why you\'re not!')}</p>${progress}</div>`;
       }
       const head = `<div class="sp-ov-icon">🚨</div>
-        <h2>${V.byMe ? 'คุณ' : esc(V.byName)} กล่าวหา ${esc(V.targetName)}</h2><p>ว่าเป็นสายลับ</p>`;
+        <h2>${V.byMe ? 'คุณ' : esc(V.byName)} กล่าวหา ${esc(V.targetName)}${enLine(`${V.byMe ? 'You' : esc(V.byName)} accused ${esc(V.targetName)}`)}</h2><p>ว่าเป็นสายลับ · of being the spy</p>`;
       if (V.myVote !== undefined || U.sent) {
         return `<div class="sp-overlay">${head}
-          <p>${U.sent && V.myVote === undefined ? '⏳ กำลังส่ง…' : V.myVote ? '👍 คุณเห็นด้วย' : '👎 คุณไม่เห็นด้วย'} — รอคนอื่น</p>${progress}</div>`;
+          <p>${U.sent && V.myVote === undefined ? '⏳ กำลังส่ง… · Sending…' : V.myVote ? '👍 คุณเห็นด้วย · You agreed' : '👎 คุณไม่เห็นด้วย · You disagreed'} — รอคนอื่น · waiting for others</p>${progress}</div>`;
       }
       return `<div class="sp-overlay">${head}${progress}
         <div class="actions">
-          <button data-sp="vote" data-yes="0">👎 ไม่เห็นด้วย</button>
-          <button class="btn-primary" data-sp="vote" data-yes="1">👍 เห็นด้วย</button>
+          <button data-sp="vote" data-yes="0">👎 ไม่เห็นด้วย${enLine('Disagree')}</button>
+          <button class="btn-primary" data-sp="vote" data-yes="1">👍 เห็นด้วย${enLine('Agree')}</button>
         </div></div>`;
     }
     const voted = V.myVote != null;
     const votedName = voted ? (v.others.find(o => o.id === V.myVote) || {}).name : '';
     return `<div class="sp-overlay"><div class="sp-ov-icon">⏰</div>
-      <h2>หมดเวลา! ใครคือสายลับ?</h2>
+      <h2>หมดเวลา! ใครคือสายลับ?${enLine('Time\'s up! Who is the spy?')}</h2>
       <p class="muted">${voted ? `คุณโหวต <b>${esc(votedName || '')}</b> (เปลี่ยนได้จนกว่าทุกคนจะโหวตครบ)` : 'คนที่ได้เสียงมากที่สุดจะถูกจับ — ถ้าเสมอ สายลับรอด'}
-        · โหวตแล้ว ${V.done}/${V.total}</p>
+        · โหวตแล้ว ${V.done}/${V.total}
+        ${enLine(`${voted ? `You voted ${esc(votedName || '')} (you can change until everyone votes)` : 'Most votes gets caught — a tie means the spy escapes'} · voted ${V.done}/${V.total}`)}</p>
       ${playerButtons(v.others)}
-      <button class="btn-primary btn-block btn-big" data-sp="final" ${U.sel == null || U.sent ? 'disabled' : ''}>${U.sent ? '⏳ กำลังส่ง…' : '⚖️ โหวต'}</button>
+      <button class="btn-primary btn-block btn-big" data-sp="final" ${U.sel == null || U.sent ? 'disabled' : ''}>${U.sent ? '⏳ กำลังส่ง… · Sending…' : '⚖️ โหวต · Vote'}</button>
     </div>`;
   }
 
   function playPanel(v) {
     if (U.mode === 'accuse') {
-      return `<div class="panel"><strong>🚨 กล่าวหาใครว่าเป็นสายลับ?</strong>
-        <p class="muted small">ทุกคนจะหยุดโหวต ถ้าเห็นด้วยทุกคน คนนั้นถูกจับทันที · กล่าวหาได้คนละครั้งต่อรอบ</p>
+      return `<div class="panel"><strong>🚨 กล่าวหาใครว่าเป็นสายลับ?${enLine('Who do you accuse of being the spy?')}</strong>
+        <p class="muted small">ทุกคนจะหยุดโหวต ถ้าเห็นด้วยทุกคน คนนั้นถูกจับทันที · กล่าวหาได้คนละครั้งต่อรอบ${enLine('The clock stops for a vote — if everyone agrees, they\'re caught · one accusation per player per round')}</p>
         ${playerButtons(v.others)}
-        <div class="actions"><button data-sp="mode">ยกเลิก</button>
-          <button class="btn-primary" data-sp="accuse" ${U.sel == null ? 'disabled' : ''}>🚨 กล่าวหา</button></div></div>`;
+        <div class="actions"><button data-sp="mode">ยกเลิก · Cancel</button>
+          <button class="btn-primary" data-sp="accuse" ${U.sel == null ? 'disabled' : ''}>🚨 กล่าวหา · Accuse</button></div></div>`;
     }
     if (U.mode === 'guess') {
-      return `<div class="panel"><strong>🎯 ทุกคนอยู่ที่ไหน?</strong>
-        <p class="muted small">เดาได้ครั้งเดียว — ถูก คุณชนะ (+4 แต้ม) · ผิด คุณแพ้ทันที</p>
+      return `<div class="panel"><strong>🎯 ทุกคนอยู่ที่ไหน?${enLine('Where is everyone?')}</strong>
+        <p class="muted small">เดาได้ครั้งเดียว — ถูก คุณชนะ (+4 แต้ม) · ผิด คุณแพ้ทันที${enLine('One guess only — right: you win (+4 pts) · wrong: you lose at once')}</p>
         ${locationGrid(v, true)}
-        <div class="actions"><button data-sp="mode">ยกเลิก</button>
-          <button class="btn-primary" data-sp="guess" ${U.sel == null ? 'disabled' : ''}>🎯 ${U.sel != null ? `ตอบ “${esc(U.sel)}”` : 'เลือกสถานที่'}</button></div></div>`;
+        <div class="actions"><button data-sp="mode">ยกเลิก · Cancel</button>
+          <button class="btn-primary" data-sp="guess" ${U.sel == null ? 'disabled' : ''}>🎯 ${U.sel != null ? `ตอบ “${esc(U.sel)}” · Answer` : 'เลือกสถานที่ · Pick a location'}</button></div></div>`;
     }
     return `<div class="sp-actions">
-        <button data-sp="mode" data-mode="accuse" ${v.canAccuse && !U.sent ? '' : 'disabled'}>${v.canAccuse ? '🚨 กล่าวหาสายลับ' : '🚨 ใช้สิทธิ์กล่าวหาแล้ว'}</button>
-        ${v.me.spy ? '<button class="sp-guess-btn" data-sp="mode" data-mode="guess">🎯 เปิดตัว · เดาสถานที่</button>' : ''}
+        <button data-sp="mode" data-mode="accuse" ${v.canAccuse && !U.sent ? '' : 'disabled'}>${v.canAccuse ? `🚨 กล่าวหาสายลับ${enLine('Accuse the spy')}` : `🚨 ใช้สิทธิ์กล่าวหาแล้ว${enLine('Accusation used')}`}</button>
+        ${v.me.spy ? '<button class="sp-guess-btn" data-sp="mode" data-mode="guess">🎯 เปิดตัว · เดาสถานที่<span class="en-line">Reveal · guess the location</span></button>' : ''}
       </div>
-      <div class="panel"><strong>สถานที่ที่เป็นไปได้</strong> <small class="muted">แตะเพื่อขีดฆ่าที่ตัดทิ้งได้</small>
+      <div class="panel"><strong>สถานที่ที่เป็นไปได้ · Possible locations</strong> <small class="muted">แตะเพื่อขีดฆ่าที่ตัดทิ้งได้ · tap to cross out</small>
         ${locationGrid(v, false)}</div>`;
   }
 
@@ -206,18 +210,19 @@ function createSpUI(send) {
       return `
         <div class="sp-stage">
           <div class="sp-big">🕵️</div>
-          <h2>สวัสดี ${esc(v.name || '')}</h2>
-          <p class="muted">เข้าร่วมแล้ว — รอคนสร้างห้องเริ่มเกม${v.count ? ` (ตอนนี้ ${v.count} คน)` : ''}</p>
+          <h2>สวัสดี ${esc(v.name || '')}${enLine(`Hi ${esc(v.name || '')}`)}</h2>
+          <p class="muted">เข้าร่วมแล้ว — รอคนสร้างห้องเริ่มเกม${v.count ? ` (ตอนนี้ ${v.count} คน)` : ''}
+            ${enLine(`Joined — waiting for the host to start${v.count ? ` (${v.count} players)` : ''}`)}</p>
         </div>
         <div class="panel sp-rules">
-          <strong>วิธีเล่น</strong>
+          <strong>วิธีเล่น · How to play</strong>
           <ol>
-            <li>ทุกคนรู้ว่าอยู่ <b>สถานที่</b> ไหนและได้บทบาทของตัวเอง — ยกเว้น <b>สายลับ 1 คน</b> ที่ไม่รู้อะไรเลย</li>
-            <li>ผลัดกันถามคำถามเกี่ยวกับสถานที่ทีละคน คนถูกถามตอบแล้วถามคนต่อไป (ห้ามถามกลับคนที่เพิ่งถามตัวเอง)</li>
-            <li>ตอบให้รู้ว่าคุณรู้สถานที่ แต่อย่าชัดจนสายลับเดาออก!</li>
-            <li>สงสัยใคร กด <b>🚨 กล่าวหา</b> (คนละครั้งต่อรอบ) — ถ้าทุกคนเห็นด้วย คนนั้นถูกจับ</li>
-            <li>สายลับกด <b>🎯 เดาสถานที่</b> ได้ทุกเมื่อ ถ้าถูก สายลับชนะ</li>
-            <li>หมดเวลา ทุกคนโหวตหาสายลับ</li>
+            <li>ทุกคนรู้ว่าอยู่ <b>สถานที่</b> ไหนและได้บทบาทของตัวเอง — ยกเว้น <b>สายลับ 1 คน</b> ที่ไม่รู้อะไรเลย${enLine('Everyone knows the location and gets a role — except 1 spy, who knows nothing')}</li>
+            <li>ผลัดกันถามคำถามเกี่ยวกับสถานที่ทีละคน คนถูกถามตอบแล้วถามคนต่อไป (ห้ามถามกลับคนที่เพิ่งถามตัวเอง)${enLine('Take turns asking about the location; whoever answers asks next (not back to the one who just asked)')}</li>
+            <li>ตอบให้รู้ว่าคุณรู้สถานที่ แต่อย่าชัดจนสายลับเดาออก!${enLine('Show you know the place, but not so clearly the spy figures it out!')}</li>
+            <li>สงสัยใคร กด <b>🚨 กล่าวหา</b> (คนละครั้งต่อรอบ) — ถ้าทุกคนเห็นด้วย คนนั้นถูกจับ${enLine('Suspicious? Press 🚨 Accuse (once per round) — if everyone agrees, they\'re caught')}</li>
+            <li>สายลับกด <b>🎯 เดาสถานที่</b> ได้ทุกเมื่อ ถ้าถูก สายลับชนะ${enLine('The spy can press 🎯 Guess the location at any time — right means the spy wins')}</li>
+            <li>หมดเวลา ทุกคนโหวตหาสายลับ${enLine('When time runs out, everyone votes for the spy')}</li>
           </ol>
         </div>`;
     },
@@ -227,7 +232,7 @@ function createSpUI(send) {
       return `${notice(v)}${voteOverlay(v)}
         <div class="sp-top">
           <div class="sp-timer" data-sp-timer>--:--</div>
-          <div class="sp-meta">${v.paused && !v.vote ? '⏸ หยุดเวลาไว้<br>' : ''}${v.firstIsMe ? '🎤 <b>คุณ</b>เริ่มถามก่อน!' : `🎤 ${esc(v.firstName)} เริ่มถามก่อน`}</div>
+          <div class="sp-meta">${v.paused && !v.vote ? '⏸ หยุดเวลาไว้ · Paused<br>' : ''}${v.firstIsMe ? `🎤 <b>คุณ</b>เริ่มถามก่อน!${enLine('You ask first!')}` : `🎤 ${esc(v.firstName)} เริ่มถามก่อน${enLine(`${esc(v.firstName)} asks first`)}`}</div>
         </div>
         ${roleCard(me)}
         ${playPanel(v)}`;
@@ -237,24 +242,24 @@ function createSpUI(send) {
       return `
         <div class="sp-stage">
           <div class="sp-big pop">${v.won ? '🏆' : '😵'}</div>
-          <h2 class="win-title ${v.won ? 'won' : 'lost'}">${v.won ? 'คุณชนะ!' : 'คุณแพ้'}</h2>
-          <p><b>${v.winner === 'spy' ? '🕵️ สายลับชนะ' : '🕴️ ฝ่ายพลเมืองชนะ'}</b></p>
-          <p class="muted">${esc(v.text)}</p>
+          <h2 class="win-title ${v.won ? 'won' : 'lost'}">${v.won ? `คุณชนะ!${enLine('You win!')}` : `คุณแพ้${enLine('You lose')}`}</h2>
+          <p><b>${v.winner === 'spy' ? '🕵️ สายลับชนะ · The spy wins' : '🕴️ ฝ่ายพลเมืองชนะ · The agents win'}</b></p>
+          <p class="muted">${esc(v.text)}${v.en ? enLine(esc(v.en)) : ''}</p>
         </div>
         <div class="panel sp-answer">
-          <div><small class="muted">สถานที่คือ</small><b>${v.location.icon} ${esc(v.location.name)}</b></div>
-          <div><small class="muted">สายลับคือ</small><b>🕵️ ${esc(v.spyName)}</b></div>
+          <div><small class="muted">สถานที่คือ · Location</small><b>${v.location.icon} ${esc(v.location.name)}${enLine(esc(v.location.en || ''))}</b></div>
+          <div><small class="muted">สายลับคือ · The spy</small><b>🕵️ ${esc(v.spyName)}</b></div>
         </div>
-        <div class="panel"><strong>แต้มสะสม</strong>
+        <div class="panel"><strong>แต้มสะสม · Scores</strong>
           <div class="sp-results">${v.results.map(r => `
             <div class="sp-res ${r.won ? 'won' : 'lost'}">
-              <span class="sp-res-name">${esc(r.name)}${r.isMe ? ' (คุณ)' : ''}</span>
-              <span class="sp-res-score">${r.score} แต้ม${r.gained ? ` <small>+${r.gained}</small>` : ''}</span>
-              <span class="sp-res-role">${r.spy ? '🕵️ สายลับ' : esc(r.role)}</span>
+              <span class="sp-res-name">${esc(r.name)}${r.isMe ? ' (คุณ · you)' : ''}</span>
+              <span class="sp-res-score">${r.score} แต้ม · pts${r.gained ? ` <small>+${r.gained}</small>` : ''}</span>
+              <span class="sp-res-role">${r.spy ? '🕵️ สายลับ · Spy' : `${esc(r.role)} · ${esc(r.roleEn || '')}`}</span>
             </div>`).join('')}
           </div>
         </div>
-        <p class="muted" style="text-align:center">รอคนสร้างห้องเริ่มรอบใหม่…</p>`;
+        <p class="muted" style="text-align:center">รอคนสร้างห้องเริ่มรอบใหม่…${enLine('Waiting for the host to start a new round…')}</p>`;
     },
   };
 

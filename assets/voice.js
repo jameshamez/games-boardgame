@@ -117,6 +117,7 @@ function showVoiceWarning() {
   if (!el) return;
   el.hidden = false;
   el.innerHTML = `🔇 พากย์ชื่อผู้เล่นไม่ได้ จะแสดงชื่อเป็นข้อความแทน (บทพากย์อื่นยังมีเสียงปกติ)<br>
-    <small>เบราว์เซอร์นี้ไม่มีเสียงภาษาไทย — ลองเปิดด้วย Chrome หรือ Safari หรือเปิดผ่าน python3 server.py บน Mac</small>`;
+    <small>เบราว์เซอร์นี้ไม่มีเสียงภาษาไทย — ลองเปิดด้วย Chrome หรือ Safari หรือเปิดผ่าน python3 server.py บน Mac</small>
+    <span class="en-line">Can't speak player names here, so they're shown as text (other narration still plays). Try Chrome or Safari.</span>`;
 }
 

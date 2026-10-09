@@ -223,19 +223,19 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         now = time.time()
         FAILED_JOINS[:] = [t for t in FAILED_JOINS if now - t < 60]
         if len(FAILED_JOINS) >= 20:
-            return self.send_json({"error": "ใส่รหัสผิดบ่อยเกินไป รอสักครู่แล้วลองใหม่"}, 429)
+            return self.send_json({"error": "ใส่รหัสผิดบ่อยเกินไป รอสักครู่แล้วลองใหม่ · Too many wrong codes — wait a moment and try again"}, 429)
         if str(data.get("room", "")).strip().upper() != ROOM.code:
             FAILED_JOINS.append(now)
-            return self.send_json({"error": "รหัสห้องไม่ถูกต้อง"}, 400)
+            return self.send_json({"error": "รหัสห้องไม่ถูกต้อง · Wrong room code"}, 400)
         # กลับเข้าห้องเดิม (เช่นรีเฟรชหน้า)
         pid, token = data.get("pid"), data.get("token")
         if pid in ROOM.players and ROOM.players[pid]["token"] == token:
             return self.send_json({"pid": pid, "token": token, "name": ROOM.players[pid]["name"]})
         name = str(data.get("name", "")).strip()[:20]
         if not name:
-            return self.send_json({"error": "กรุณาใส่ชื่อ"}, 400)
+            return self.send_json({"error": "กรุณาใส่ชื่อ · Please enter a name"}, 400)
         if any(p["name"].lower() == name.lower() for p in ROOM.players.values()):
-            return self.send_json({"error": "ชื่อนี้มีคนใช้แล้ว"}, 400)
+            return self.send_json({"error": "ชื่อนี้มีคนใช้แล้ว · That name is taken"}, 400)
         pid, token = secrets.token_hex(4), secrets.token_hex(12)
         ROOM.players[pid] = {"name": name, "token": token, "seen": time.time()}
         ROOM.order.append(pid)

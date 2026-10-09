@@ -222,24 +222,24 @@ function homeView() {
   return `
     <section class="hero">
       <div class="fw-logo">🤫</div>
-      <h1>คำต้องห้าม</h1>
-      <p>ทุกคนเห็นคำต้องห้ามของคนอื่น แต่ไม่รู้คำของตัวเอง — หลอกให้เพื่อนพูดออกมาให้ได้!</p>
+      <h1>คำต้องห้าม${enLine('Forbidden Words')}</h1>
+      <p>ทุกคนเห็นคำต้องห้ามของคนอื่น แต่ไม่รู้คำของตัวเอง — หลอกให้เพื่อนพูดออกมาให้ได้!${enLine('Everyone sees the others\' forbidden words but not their own — trick your friends into saying theirs!')}</p>
     </section>
 
     <section class="panel home-card">
-      <h3>🏠 สร้างห้องใหม่</h3>
-      <input type="text" id="create-name" placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.name)}" autocomplete="nickname">
+      <h3>🏠 สร้างห้องใหม่ <small>Create a room</small></h3>
+      <input type="text" id="create-name" placeholder="ชื่อของคุณ · Your name" maxlength="20" value="${esc(S.name)}" autocomplete="nickname">
       ${S.error ? `<p class="warn">⚠️ ${esc(S.error)}</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="create">สร้างห้อง</button>
-      <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · คุณเล่นด้วย ไม่ต้องมีคนคุมเกม</small>
+      <button class="btn-primary btn-block btn-big" data-act="create">สร้างห้อง${enLine('Create room')}</button>
+      <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · คุณเล่นด้วย ไม่ต้องมีคนคุมเกม${enLine('You get a 6-digit room code for friends · you play too, no game master needed')}</small>
     </section>
 
     <section class="panel home-card">
-      <h3>🔑 เข้าร่วมห้อง</h3>
+      <h3>🔑 เข้าร่วมห้อง <small>Join a room</small></h3>
       <form id="join-room" class="stack">
-        <input type="text" name="code" maxlength="6" placeholder="เลขห้อง" autocapitalize="characters" autocomplete="off">
-        <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" autocomplete="nickname">
-        <button class="btn-block btn-big" type="submit">เข้าร่วม</button>
+        <input type="text" name="code" maxlength="6" placeholder="เลขห้อง · Room code" autocapitalize="characters" autocomplete="off">
+        <input type="text" name="name" placeholder="ชื่อของคุณ · Your name" maxlength="20" autocomplete="nickname">
+        <button class="btn-block btn-big" type="submit">เข้าร่วม${enLine('Join')}</button>
       </form>
     </section>`;
 }
@@ -247,70 +247,70 @@ function homeView() {
 function lobbyView() {
   const n = S.joined.length;
   const join = Net.error ? `<p class="warn">⚠️ ${Net.error}</p>`
-    : !Net.room ? '<p class="muted">กำลังเปิดห้อง…</p>'
+    : !Net.room ? '<p class="muted">กำลังเปิดห้อง… · Opening room…</p>'
     : `<div class="join-box">
         <div id="qr" class="qr" data-url="${esc(Net.joinUrl())}"></div>
         <div class="join-info">
-          <p>เลขห้อง</p>
+          <p>เลขห้อง · Room code</p>
           <b class="room-code big">${Net.room}</b>
-          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR</p>
+          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR${enLine('Friends open this site › Join a room › enter the code, or scan the QR')}</p>
           <code>${esc(Net.joinUrl())}</code>
         </div>
       </div>`;
-  const cats = [['mix', { name: 'คละทุกหมวด', icon: '🎲', level: 'แนะนำ', desc: 'สุ่มจากทุกหมวด' }], ...Object.entries(WORD_SETS)];
+  const cats = [['mix', { name: 'คละทุกหมวด', en: 'Mix all', icon: '🎲', level: 'แนะนำ', levelEn: 'Recommended', desc: 'สุ่มจากทุกหมวด', descEn: 'Random from every category' }], ...Object.entries(WORD_SETS)];
   return `
-    <button class="btn-ghost small-btn back-home" data-act="close">← ปิดห้อง</button>
+    <button class="btn-ghost small-btn back-home" data-act="close">← ปิดห้อง · Close room</button>
     <section class="panel">
-      <strong>ผู้เล่น (${n} คน)</strong>
+      <strong>ผู้เล่น (${n} คน) · Players (${n})</strong>
       ${join}
       <div class="name-list">
         ${S.joined.map((j, i) => `
           <div class="row name-row">
             <span class="seat">${i + 1}</span>
-            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name)}${j.local ? ' <small class="muted">· คุณ</small>' : ''}</span>
-            ${j.local ? '' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ">✕</button>`}
+            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name)}${j.local ? ' <small class="muted">· คุณ · you</small>' : ''}</span>
+            ${j.local ? '' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ · Remove">✕</button>`}
           </div>`).join('')}
       </div>
     </section>
 
     <section class="panel">
-      <strong>หมวดคำ</strong>
+      <strong>หมวดคำ · Word category</strong>
       <div class="fw-cats">${cats.map(([id, c]) => `
         <button class="fw-cat ${S.settings.category === id ? 'on' : ''}" data-act="cat" data-id="${id}">
-          <span class="fw-cat-icon">${c.icon}</span><b>${c.name}</b><small>${c.level} · ${c.desc}</small>
+          <span class="fw-cat-icon">${c.icon}</span><b>${c.name} · ${c.en}</b><small>${c.level} · ${c.desc}${enLine(`${c.levelEn} · ${c.descEn}`)}</small>
         </button>`).join('')}
       </div>
       <div class="fw-settings">
-        <label>เวลา
+        <label>เวลา · Time
           <select data-setting="minutes">${TIME_OPTIONS.map(m =>
-            `<option value="${m}" ${S.settings.minutes === m ? 'selected' : ''}>${m ? `${m} นาที` : 'ไม่จำกัด'}</option>`).join('')}</select></label>
-        <label>โหมด
+            `<option value="${m}" ${S.settings.minutes === m ? 'selected' : ''}>${m ? `${m} นาที · min` : 'ไม่จำกัด · No limit'}</option>`).join('')}</select></label>
+        <label>โหมด · Mode
           <select data-setting="mode">
-            <option value="out" ${S.settings.mode === 'out' ? 'selected' : ''}>ตกรอบ — รอดคนสุดท้ายชนะ</option>
-            <option value="score" ${S.settings.mode === 'score' ? 'selected' : ''}>นับแต้ม — จับได้ +1 โดนจับ −1</option>
+            <option value="out" ${S.settings.mode === 'out' ? 'selected' : ''}>ตกรอบ — รอดคนสุดท้ายชนะ · Elimination — last one standing wins</option>
+            <option value="score" ${S.settings.mode === 'score' ? 'selected' : ''}>นับแต้ม — จับได้ +1 โดนจับ −1 · Points — catch +1, caught −1</option>
           </select></label>
       </div>
     </section>
 
     <div class="start-bar">
-      ${n < MIN_PLAYERS ? `<p class="warn">ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🤫 เริ่มเกม · แจกคำ</button>
+      ${n < MIN_PLAYERS ? `<p class="warn">ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)${enLine(`Need at least ${MIN_PLAYERS} players (now ${n})`)}</p>` : ''}
+      <button class="btn-primary btn-block btn-big" data-act="start" ${n < MIN_PLAYERS ? 'disabled' : ''}>🤫 เริ่มเกม · แจกคำ${enLine('Start game · deal words')}</button>
     </div>`;
 }
 
 function hostBar() {
   if (S.screen === 'end') {
     return `<div class="fw-hostbar">
-      <button class="btn-primary" data-act="again">🔁 เล่นอีกรอบ</button>
-      <button data-act="to-lobby">⚙️ กลับห้อง (เปลี่ยนตั้งค่า)</button>
-      ${S.history.length ? '<button data-act="undo">↩️ ยกเลิกการจับล่าสุด</button>' : ''}
+      <button class="btn-primary" data-act="again">🔁 เล่นอีกรอบ · Play again</button>
+      <button data-act="to-lobby">⚙️ กลับห้อง (เปลี่ยนตั้งค่า) · Back to room</button>
+      ${S.history.length ? '<button data-act="undo">↩️ ยกเลิกการจับล่าสุด · Undo last catch</button>' : ''}
     </div>`;
   }
   return `<div class="fw-hostbar">
     <span class="fw-host-timer" data-host-timer></span>
-    <button data-act="pause">${paused() ? '▶️ ต่อ' : '⏸ หยุด'}</button>
-    <button data-act="undo" ${S.history.length ? '' : 'disabled'}>↩️ ยกเลิกจับล่าสุด</button>
-    <button data-act="end">⏹ จบเกม</button>
+    <button data-act="pause">${paused() ? '▶️ ต่อ · Resume' : '⏸ หยุด · Pause'}</button>
+    <button data-act="undo" ${S.history.length ? '' : 'disabled'}>↩️ ยกเลิกจับล่าสุด · Undo</button>
+    <button data-act="end">⏹ จบเกม · End game</button>
   </div>`;
 }
 
@@ -337,7 +337,7 @@ document.addEventListener('click', e => {
   const ACTIONS = {
     create() {
       const name = ($app.querySelector('#create-name')?.value || '').trim();
-      if (!name) { S.error = 'ใส่ชื่อของคุณก่อน'; return render(); }
+      if (!name) { S.error = 'ใส่ชื่อของคุณก่อน · Enter your name first'; return render(); }
       S.error = '';
       S.name = name;
       store.set('name', name);
@@ -349,14 +349,14 @@ document.addEventListener('click', e => {
       render();
     },
     close() {
-      if (S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่')) return;
+      if (S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่\nClose this room? Friends will need to join a new one.')) return;
       Net.stop();
       setInRoom(false);
       S.joined = [];
       S.screen = 'home';
       render();
     },
-    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?')) Net.kick(btn.dataset.pid); },
+    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?\nRemove this player from the room?')) Net.kick(btn.dataset.pid); },
     cat() {
       S.settings.category = btn.dataset.id;
       store.set('settings', S.settings);
@@ -367,7 +367,7 @@ document.addEventListener('click', e => {
     'to-lobby'() { S.screen = 'lobby'; render(); },
     pause: togglePause,
     undo: undoCatch,
-    end() { if (confirm('จบเกมตอนนี้?')) endGame(); },
+    end() { if (confirm('จบเกมตอนนี้?\nEnd the game now?')) endGame(); },
   };
   ACTIONS[act]?.();
 });
@@ -389,8 +389,8 @@ document.addEventListener('submit', e => {
     e.target.querySelector('.warn')?.remove();
     e.target.insertAdjacentHTML('beforeend', `<p class="warn">⚠️ ${msg}</p>`);
   };
-  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง');
-  if (!name) return warn('ใส่ชื่อของคุณก่อน');
+  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง · Invalid room code — ask the host for it');
+  if (!name) return warn('ใส่ชื่อของคุณก่อน · Enter your name first');
   location.href = `play.html?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 });
 

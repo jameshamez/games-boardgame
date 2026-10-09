@@ -111,7 +111,7 @@ const CloudHostNet = {
           this.hello();
           resolve();
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-          this.error = 'เชื่อมต่อ Supabase ไม่ได้ — ตรวจสอบค่าใน assets/config.js และการเชื่อมต่ออินเทอร์เน็ต';
+          this.error = 'เชื่อมต่อ Supabase ไม่ได้ — ตรวจสอบค่าใน assets/config.js และการเชื่อมต่ออินเทอร์เน็ต · Can\'t connect to Supabase — check assets/config.js and your internet';
           this.onLobby();
           resolve();
         }
@@ -137,11 +137,11 @@ const CloudHostNet = {
     const name = String(p.name || '').trim().slice(0, 20);
     if (!pid || !p.pub) return;
     const known = this.players[pid];
-    if (known && known.pub !== p.pub) return this.send('joined', { to: pid, error: 'ตัวตนนี้ถูกใช้อยู่แล้ว' });
+    if (known && known.pub !== p.pub) return this.send('joined', { to: pid, error: 'ตัวตนนี้ถูกใช้อยู่แล้ว · This identity is already in use' });
     if (!known) {
-      if (!name) return this.send('joined', { to: pid, error: 'กรุณาใส่ชื่อ' });
+      if (!name) return this.send('joined', { to: pid, error: 'กรุณาใส่ชื่อ · Please enter a name' });
       if (S.joined.some(j => j.name.trim().toLowerCase() === name.toLowerCase())) {
-        return this.send('joined', { to: pid, error: 'ชื่อนี้มีคนใช้แล้ว' });
+        return this.send('joined', { to: pid, error: 'ชื่อนี้มีคนใช้แล้ว · That name is taken' });
       }
       this.players[pid] = { name, pub: p.pub, key: await Box.shared(this.kp.priv, p.pub) };
       S.joined.push({ pid, name, online: true });
@@ -250,7 +250,7 @@ const CloudPlayerNet = {
     const result = await new Promise(resolve => {
       this.waiter = resolve;
       this.send('who', {});
-      setTimeout(() => resolve({ ok: false, error: 'ไม่พบห้องนี้ หรือเจ้าห้องยังไม่ได้เปิดเกม' }), 8000);
+      setTimeout(() => resolve({ ok: false, error: 'ไม่พบห้องนี้ หรือเจ้าห้องยังไม่ได้เปิดเกม · Room not found, or the host hasn\'t opened it yet' }), 8000);
     });
     this.waiter = null;
     if (result.ok) {
@@ -277,7 +277,7 @@ const CloudPlayerNet = {
       if (payload.to !== this.pid) return;
       localStorage.removeItem(this.storeKey(this.room));
       this.stop();
-      this.onGone('คุณถูกลบออกจากห้อง');
+      this.onGone('คุณถูกลบออกจากห้อง · You were removed from the room');
     });
     this.ch = ch;
     await new Promise(resolve => {

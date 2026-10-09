@@ -303,9 +303,9 @@ function setupDynamic() {
         <div class="rt-desc">${r.desc}${enLine(r.descEn)}</div>
         ${role === 'villager' ? `<div class="rt-count">× ${c} <small>(อัตโนมัติ · auto)</small></div>`
           : multi ? `<div class="stepper">
-              <button data-act="count" data-role="${role}" data-d="-1" aria-label="ลด">−</button>
+              <button data-act="count" data-role="${role}" data-d="-1" aria-label="ลด · Less">−</button>
               <b>${c}</b>
-              <button data-act="count" data-role="${role}" data-d="1" aria-label="เพิ่ม">+</button></div>`
+              <button data-act="count" data-role="${role}" data-d="1" aria-label="เพิ่ม · More">+</button></div>`
           : `<div class="rt-check">${c ? '✓ ใช้ · On' : 'แตะเพื่อใช้ · Tap to add'}</div>`}
       </div>`;
   };
@@ -357,7 +357,7 @@ function namesPanel() {
               <span class="seat">${i + 1}</span>
               <input type="text" class="grow" placeholder="ชื่อผู้เล่น · Player name" value="${esc(name)}"
                 data-name="${i}" maxlength="20" autocomplete="off" enterkeyhint="next">
-              <button class="icon-btn" data-act="remove-player" data-i="${i}" aria-label="ลบ">✕</button>
+              <button class="icon-btn" data-act="remove-player" data-i="${i}" aria-label="ลบ · Remove">✕</button>
             </div>`).join('')}
         </div>
       </section>`;
@@ -464,7 +464,7 @@ const VIEWS = {
       ${ph.hint ? `<p class="muted">${ph.hint}</p>` : ''}</div>`;
     if (ph.type === 'info') {
       return `${top}<div class="info-card">${ph.html}</div>
-        <button class="btn-primary btn-block btn-big" data-act="night-next">${ph.button || 'ต่อไป'}</button>`;
+        <button class="btn-primary btn-block btn-big" data-act="night-next">${ph.button || 'ต่อไป · Next'}</button>`;
     }
     if (ph.type === 'choice') {
       return `${top}${ph.html ? `<div class="info-card">${ph.html}</div>` : ''}
@@ -475,7 +475,7 @@ const VIEWS = {
     const ready = N.pick.length === ph.count;
     return `${top}${playerGrid(ph.candidates, N.pick, ph.tag)}
       <div class="actions">
-        ${ph.optional ? `<button data-act="night-skip">${ph.skipLabel || 'ไม่ใช้'}</button>` : ''}
+        ${ph.optional ? `<button data-act="night-skip">${ph.skipLabel || 'ไม่ใช้ · Skip'}</button>` : ''}
         <button class="btn-primary" data-act="night-confirm" ${ready ? '' : 'disabled'}>
           ${ph.count > 1 ? `ยืนยัน (${N.pick.length}/${ph.count})` : 'ยืนยัน'}${enLine('Confirm')}</button>
       </div>`;
@@ -1106,9 +1106,9 @@ function lobbyPanel() {
           <div class="row name-row">
             <span class="seat">${i + 1}</span>
             <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name) || '<em class="muted">(ชื่อของคุณ · your name)</em>'}${j.local ? ' <small class="muted">· เครื่องนี้ · this device</small>' : ''}</span>
-            <button class="icon-btn" data-act="seat" data-i="${i}" data-d="-1" aria-label="เลื่อนขึ้น">↑</button>
-            <button class="icon-btn" data-act="seat" data-i="${i}" data-d="1" aria-label="เลื่อนลง">↓</button>
-            ${j.local ? '<span class="icon-btn"></span>' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ">✕</button>`}
+            <button class="icon-btn" data-act="seat" data-i="${i}" data-d="-1" aria-label="เลื่อนขึ้น · Move up">↑</button>
+            <button class="icon-btn" data-act="seat" data-i="${i}" data-d="1" aria-label="เลื่อนลง · Move down">↓</button>
+            ${j.local ? '<span class="icon-btn"></span>' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ · Remove">✕</button>`}
           </div>`).join('') || '<p class="muted">ยังไม่มีใครเข้าร่วม… · No one has joined yet…</p>'}
       </div>
     </section>`;
@@ -1392,7 +1392,7 @@ document.addEventListener('click', e => {
       narrate(LINES.test);
     },
     quit() {
-      if (!confirm('จบเกมนี้และกลับไปหน้าตั้งค่า?')) return;
+      if (!confirm('จบเกมนี้และกลับไปหน้าตั้งค่า?\nEnd this game and go back to setup?')) return;
       newRun(); stopTimer();
       document.getElementById('settings').hidden = true;
       S.screen = 'setup'; render();
@@ -1444,7 +1444,7 @@ document.addEventListener('click', e => {
       render();
     },
     'go-home'() {
-      if (S.mode === 'multi' && S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่')) return;
+      if (S.mode === 'multi' && S.joined.some(j => !j.local) && !confirm('ปิดห้องนี้? เพื่อนในห้องจะต้องเข้าห้องใหม่\nClose this room? Friends will need to join a new one.')) return;
       Net.stop();
       setInRoom(false);
       S.joined = [];
@@ -1457,7 +1457,7 @@ document.addEventListener('click', e => {
       [S.joined[i], S.joined[j]] = [S.joined[j], S.joined[i]];
       render();
     },
-    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?')) Net.kick(btn.dataset.pid); },
+    kick() { if (confirm('ลบผู้เล่นคนนี้ออกจากห้อง?\nRemove this player from the room?')) Net.kick(btn.dataset.pid); },
     'host-override'() {
       if (S.screen === 'night') S.night.hostOverride = true; else S.dayState.hostOverride = true;
       render();
@@ -1528,8 +1528,8 @@ document.addEventListener('submit', e => {
     e.target.querySelector('.warn')?.remove();
     e.target.insertAdjacentHTML('beforeend', `<p class="warn">⚠️ ${msg}</p>`);
   };
-  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง');
-  if (!name) return warn('ใส่ชื่อของคุณก่อน');
+  if (!/^[A-Z0-9]{4,6}$/.test(code)) return warn('เลขห้องไม่ถูกต้อง — ให้ถามเลขห้องจากคนสร้างห้อง · Invalid room code — ask the host for it');
+  if (!name) return warn('ใส่ชื่อของคุณก่อน · Enter your name first');
   location.href = `play.html?room=${encodeURIComponent(code)}&name=${encodeURIComponent(name)}`;
 });
 

@@ -43,7 +43,7 @@ const LocalHostNet = {
       this.error = '';
       try { sessionStorage.setItem(`${ROOM_NS.store}.hostKey`, this.key); } catch { /* ignore */ }
     } catch {
-      this.error = 'ต้องเปิดเกมผ่าน python3 server.py บน Mac ก่อน จึงจะเล่นหลายเครื่องได้';
+      this.error = 'ต้องเปิดเกมผ่าน python3 server.py บน Mac ก่อน จึงจะเล่นหลายเครื่องได้ · Run python3 server.py on the Mac first to play on several devices';
       this.onLobby();
       return;
     }
@@ -142,8 +142,8 @@ const LocalPlayerNet = {
     const body = { room, name };
     if (saved) Object.assign(body, { pid: saved.pid, token: saved.token });
     let r;
-    try { r = await this.api('POST', '/api/join', body); } catch { return { ok: false, error: 'เชื่อมต่อเครื่องเจ้าห้องไม่ได้' }; }
-    if (r.status !== 200) return { ok: false, error: r.data.error || 'เข้าร่วมไม่ได้' };
+    try { r = await this.api('POST', '/api/join', body); } catch { return { ok: false, error: 'เชื่อมต่อเครื่องเจ้าห้องไม่ได้ · Can\'t reach the host' }; }
+    if (r.status !== 200) return { ok: false, error: r.data.error || 'เข้าร่วมไม่ได้ · Couldn\'t join' };
     Object.assign(this, { room, pid: r.data.pid, token: r.data.token, name: r.data.name, v: null });
     this.save({ room, pid: this.pid, token: this.token });
     clearInterval(this.timer);
@@ -164,7 +164,7 @@ const LocalPlayerNet = {
       if (status === 404) {
         clearInterval(this.timer);
         this.save(null);
-        return this.onGone('คุณไม่ได้อยู่ในห้องแล้ว กรุณาเข้าร่วมใหม่');
+        return this.onGone('คุณไม่ได้อยู่ในห้องแล้ว กรุณาเข้าร่วมใหม่ · You\'re no longer in the room — please join again');
       }
       if (data.same) return;
       this.v = data.v;
