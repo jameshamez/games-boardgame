@@ -240,7 +240,7 @@ function hostPlayer() {
 /** ส่วนของจอเจ้าห้องที่ทุกคนเห็นได้ (ไม่มีข้อมูลลับ) */
 function hostStrip() {
   if (S.screen === 'night') {
-    return `<div class="phase-head">🌙 คืนที่ ${S.day}</div><div class="stage tight">${subtitleBox()}</div>`;
+    return `<div class="phase-head">🌙 คืนที่ ${S.day} <small>Night ${S.day}</small></div><div class="stage tight">${subtitleBox()}</div>`;
   }
   if (S.screen === 'day') return VIEWS.day();
   if (S.screen === 'reveal') return revealMulti();
@@ -261,14 +261,14 @@ function syncHostEntry() {
 function setupProblem() {
   const n = validNames().length;
   const killers = KILLERS.reduce((a, r) => a + (S.counts[r] || 0), 0);
-  if (S.mode === 'multi' && validNames().some(x => !x)) return 'ใส่ชื่อของคุณก่อน (ช่อง “ฉันเล่นด้วย”)';
-  if (n < MIN_PLAYERS) return `ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)`;
-  if (new Set(validNames()).size !== n) return 'มีชื่อผู้เล่นซ้ำกัน';
-  if (villagerCount() < 0) return `บทบาทพิเศษ (${specialCount()}) มากกว่าจำนวนผู้เล่น (${n})`;
-  if (killers < 1) return 'ต้องมีมนุษย์หมาป่าหรือลูกหมาป่าอย่างน้อย 1 ตัว';
-  if (killers >= n - killers) return 'หมาป่ามากเกินไป (ต้องน้อยกว่าฝ่ายอื่น)';
-  if (S.counts.mason === 1) return 'ภราดรแห่งเมสันต้องมีอย่างน้อย 2 คน';
-  if (S.counts.apprentice && !S.counts.seer) return 'ศิษย์เทพพยากรณ์ต้องมีเทพพยากรณ์อยู่ในเกมด้วย';
+  if (S.mode === 'multi' && validNames().some(x => !x)) return `ใส่ชื่อของคุณก่อน (ช่อง “ฉันเล่นด้วย”)${enLine('Enter your name first (“I\'m playing too”)')}`;
+  if (n < MIN_PLAYERS) return `ต้องมีผู้เล่นอย่างน้อย ${MIN_PLAYERS} คน (ตอนนี้ ${n} คน)${enLine(`Need at least ${MIN_PLAYERS} players (now ${n})`)}`;
+  if (new Set(validNames()).size !== n) return `มีชื่อผู้เล่นซ้ำกัน${enLine('Duplicate player names')}`;
+  if (villagerCount() < 0) return `บทบาทพิเศษ (${specialCount()}) มากกว่าจำนวนผู้เล่น (${n})${enLine(`More special roles (${specialCount()}) than players (${n})`)}`;
+  if (killers < 1) return `ต้องมีมนุษย์หมาป่าหรือลูกหมาป่าอย่างน้อย 1 ตัว${enLine('Need at least 1 Werewolf or Wolf Cub')}`;
+  if (killers >= n - killers) return `หมาป่ามากเกินไป (ต้องน้อยกว่าฝ่ายอื่น)${enLine('Too many wolves (must be fewer than the rest)')}`;
+  if (S.counts.mason === 1) return `ภราดรแห่งเมสันต้องมีอย่างน้อย 2 คน${enLine('Masons need at least 2 players')}`;
+  if (S.counts.apprentice && !S.counts.seer) return `ศิษย์เทพพยากรณ์ต้องมีเทพพยากรณ์อยู่ในเกมด้วย${enLine('The Apprentice Seer needs a Seer in the game')}`;
   return '';
 }
 
@@ -278,7 +278,7 @@ function setupDynamic() {
   const bal = balance();
   const problem = setupProblem();
   const pct = Math.max(0, Math.min(100, 50 + bal * 3));
-  const balText = Math.abs(bal) <= 2 ? 'สมดุลดี' : bal > 0 ? 'ชาวบ้านได้เปรียบ' : 'หมาป่าได้เปรียบ';
+  const balText = Math.abs(bal) <= 2 ? 'สมดุลดี (balanced)' : bal > 0 ? 'ชาวบ้านได้เปรียบ (village favoured)' : 'หมาป่าได้เปรียบ (wolves favoured)';
 
   const tile = role => {
     const r = ROLES[role];
@@ -292,31 +292,31 @@ function setupDynamic() {
         </div>
         <div class="rt-name">${r.name}</div>
         <div class="rt-en">${r.en}</div>
-        <div class="rt-desc">${r.desc}</div>
-        ${role === 'villager' ? `<div class="rt-count">× ${c} <small>(อัตโนมัติ)</small></div>`
+        <div class="rt-desc">${r.desc}${enLine(r.descEn)}</div>
+        ${role === 'villager' ? `<div class="rt-count">× ${c} <small>(อัตโนมัติ · auto)</small></div>`
           : multi ? `<div class="stepper">
               <button data-act="count" data-role="${role}" data-d="-1" aria-label="ลด">−</button>
               <b>${c}</b>
               <button data-act="count" data-role="${role}" data-d="1" aria-label="เพิ่ม">+</button></div>`
-          : `<div class="rt-check">${c ? '✓ ใช้' : 'แตะเพื่อใช้'}</div>`}
+          : `<div class="rt-check">${c ? '✓ ใช้ · On' : 'แตะเพื่อใช้ · Tap to add'}</div>`}
       </div>`;
   };
   const section = team => {
     const list = Object.keys(ROLES).filter(r => ROLES[r].team === team);
-    return `<h3 class="team-head ${team}">${TEAMS[team].icon} ${TEAMS[team].name}</h3>
+    return `<h3 class="team-head ${team}">${TEAMS[team].icon} ${TEAMS[team].name} <small>${TEAMS[team].en}</small></h3>
       <div class="role-grid">${list.map(tile).join('')}</div>`;
   };
 
   return `
     <section class="panel">
-      <div class="row"><strong class="grow">ชุดบทบาทแนะนำ</strong></div>
+      <div class="row"><strong class="grow">ชุดบทบาทแนะนำ · Suggested sets</strong></div>
       <div class="presets">${PRESETS.map((p, i) => `
-        <button class="preset" data-act="preset" data-i="${i}"><b>${p.name}</b><small>${p.desc}</small></button>`).join('')}
+        <button class="preset" data-act="preset" data-i="${i}"><b>${p.name} · ${p.en}</b><small>${p.desc}${enLine(p.descEn)}</small></button>`).join('')}
       </div>
       <div class="balance">
-        <div class="bal-row"><span>🐺 หมาป่า</span><strong>แต้มสมดุล ${bal > 0 ? '+' : ''}${bal} · ${balText}</strong><span>ชาวบ้าน 🏡</span></div>
+        <div class="bal-row"><span>🐺 หมาป่า · Wolves</span><strong>แต้มสมดุล (balance) ${bal > 0 ? '+' : ''}${bal} · ${balText}</strong><span>Village · ชาวบ้าน 🏡</span></div>
         <div class="bal-track"><div class="bal-zero"></div><div class="bal-dot" style="left:${pct}%"></div></div>
-        <small class="muted">ผู้เล่น ${n} คน · บทบาทพิเศษ ${specialCount()} · ชาวบ้าน ${Math.max(vill, 0)} — ยิ่งใกล้ 0 ยิ่งสูสี</small>
+        <small class="muted">ผู้เล่น ${n} คน · บทบาทพิเศษ ${specialCount()} · ชาวบ้าน ${Math.max(vill, 0)} — ยิ่งใกล้ 0 ยิ่งสูสี${enLine(`${n} players · ${specialCount()} special · ${Math.max(vill, 0)} villagers — closer to 0 is fairer`)}</small>
       </div>
     </section>
 
@@ -326,7 +326,7 @@ function setupDynamic() {
 
     <div class="start-bar">
       ${problem ? `<p class="warn">⚠️ ${problem}</p>` : ''}
-      <button class="btn-primary btn-block btn-big" data-act="start" ${problem ? 'disabled' : ''}>🌕 เริ่มเกม · แจกบทบาท</button>
+      <button class="btn-primary btn-block btn-big" data-act="start" ${problem ? 'disabled' : ''}>🌕 เริ่มเกม · แจกบทบาท${enLine('Start game · deal roles')}</button>
     </div>`;
 }
 
@@ -334,20 +334,20 @@ function refreshSetup() {
   const dyn = document.getElementById('setup-dyn');
   if (dyn) dyn.innerHTML = setupDynamic();
   const pc = document.getElementById('player-count');
-  if (pc) pc.textContent = `ผู้เล่น (${validNames().length} คน)`;
+  if (pc) pc.textContent = `ผู้เล่น · Players (${validNames().length})`;
 }
 
 function namesPanel() {
   return `
       <section class="panel">
-        <div class="row"><strong class="grow" id="player-count">ผู้เล่น (${validNames().length} คน)</strong>
-          <button data-act="add-player">+ เพิ่ม</button></div>
-        <p class="muted small">เรียงชื่อตามที่นั่งรอบวง (ใช้กับนักสืบและมือระเบิด)</p>
+        <div class="row"><strong class="grow" id="player-count">ผู้เล่น · Players (${validNames().length})</strong>
+          <button data-act="add-player">+ เพิ่ม · Add</button></div>
+        <p class="muted small">เรียงชื่อตามที่นั่งรอบวง (ใช้กับนักสืบและมือระเบิด)${enLine('List names in seating order (used by the P.I. and Mad Bomber)')}</p>
         <div class="name-list">
           ${S.names.map((name, i) => `
             <div class="row name-row">
               <span class="seat">${i + 1}</span>
-              <input type="text" class="grow" placeholder="ชื่อผู้เล่น" value="${esc(name)}"
+              <input type="text" class="grow" placeholder="ชื่อผู้เล่น · Player name" value="${esc(name)}"
                 data-name="${i}" maxlength="20" autocomplete="off" enterkeyhint="next">
               <button class="icon-btn" data-act="remove-player" data-i="${i}" aria-label="ลบ">✕</button>
             </div>`).join('')}
@@ -360,34 +360,36 @@ const VIEWS = {
     return `
       <section class="hero">
         <div class="hero-moon"></div>
-        <h1>มนุษย์หมาป่า</h1>
-        <p>ทุกคนเล่นบนมือถือตัวเอง มีเสียงพากย์ภาษาไทยพาเล่นกลางวัน–กลางคืน — ไม่ต้องมีคนคุมเกม</p>
+        <h1>มนุษย์หมาป่า${enLine('Werewolf')}</h1>
+        <p>ทุกคนเล่นบนมือถือตัวเอง มีเสียงพากย์ภาษาไทยพาเล่นกลางวัน–กลางคืน — ไม่ต้องมีคนคุมเกม
+          ${enLine('Everyone plays on their own phone, with voice narration guiding day and night — no moderator needed')}</p>
       </section>
 
       <section class="panel home-card">
-        <h3>🏠 สร้างห้องใหม่</h3>
-        <input type="text" id="create-name" placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.hostName)}" autocomplete="nickname">
+        <h3>🏠 สร้างห้องใหม่ <small>Create a room</small></h3>
+        <input type="text" id="create-name" placeholder="ชื่อของคุณ · Your name" maxlength="20" value="${esc(S.hostName)}" autocomplete="nickname">
         ${S.homeError ? `<p class="warn">⚠️ ${esc(S.homeError)}</p>` : ''}
-        <button class="btn-primary btn-block btn-big" data-act="create-room">สร้างห้อง</button>
-        <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · เครื่องของคุณจะเป็นคนพากย์เสียง และคุณก็เล่นด้วย</small>
+        <button class="btn-primary btn-block btn-big" data-act="create-room">สร้างห้อง${enLine('Create room')}</button>
+        <small class="muted">ได้เลขห้อง 6 หลักให้เพื่อนกรอก · เครื่องของคุณจะเป็นคนพากย์เสียง และคุณก็เล่นด้วย
+          ${enLine('You get a 6-character room code for friends · this device narrates, and you play too')}</small>
       </section>
 
       <section class="panel home-card">
-        <h3>🔑 เข้าร่วมห้อง</h3>
+        <h3>🔑 เข้าร่วมห้อง <small>Join a room</small></h3>
         <form id="join-room" class="stack">
-          <input type="text" name="code" maxlength="6" placeholder="เลขห้อง" autocapitalize="characters" autocomplete="off">
-          <input type="text" name="name" placeholder="ชื่อของคุณ" maxlength="20" autocomplete="nickname">
-          <button class="btn-block btn-big" type="submit">เข้าร่วม</button>
+          <input type="text" name="code" maxlength="6" placeholder="เลขห้อง · Room code" autocapitalize="characters" autocomplete="off">
+          <input type="text" name="name" placeholder="ชื่อของคุณ · Your name" maxlength="20" autocomplete="nickname">
+          <button class="btn-block btn-big" type="submit">เข้าร่วม${enLine('Join')}</button>
         </form>
       </section>
 
-      <button class="btn-ghost btn-block small-btn" data-act="single">📱 หรือเล่นเครื่องเดียว (ส่งเครื่องเวียนกันในวง)</button>`;
+      <button class="btn-ghost btn-block small-btn" data-act="single">📱 หรือเล่นเครื่องเดียว (ส่งเครื่องเวียนกันในวง)${enLine('Or play on one device (pass it around)')}</button>`;
   },
 
   setup() {
     if (!S.counts) applyPreset(PRESETS[0]);
     return `
-      <button class="btn-ghost small-btn back-home" data-act="go-home">← ${S.mode === 'multi' ? 'ปิดห้อง' : 'กลับ'}</button>
+      <button class="btn-ghost small-btn back-home" data-act="go-home">← ${S.mode === 'multi' ? 'ปิดห้อง · Close room' : 'กลับ · Back'}</button>
       ${S.mode === 'multi' ? lobbyPanel() : namesPanel()}
       <div id="setup-dyn">${setupDynamic()}</div>`;
   },
@@ -399,55 +401,55 @@ const VIEWS = {
     const extra = [];
     if (KILLERS.includes(p.role)) {
       const pack = S.players.filter(o => isKiller(o) && o.id !== p.id);
-      if (pack.length) extra.push(`<strong>ฝูงของคุณ:</strong> ${names(pack)}`);
+      if (pack.length) extra.push(`<strong>ฝูงของคุณ · Your pack:</strong> ${names(pack)}`);
     }
     return `
       <div class="stage">
-        <p class="muted">แจกบทบาท ${S.reveal.idx + 1} / ${S.players.length}</p>
-        <h2>${S.reveal.shown ? esc(p.name) : `ส่งเครื่องให้ “${esc(p.name)}”`}</h2>
+        <p class="muted">แจกบทบาท · Dealing roles ${S.reveal.idx + 1} / ${S.players.length}</p>
+        <h2>${S.reveal.shown ? esc(p.name) : `ส่งเครื่องให้ “${esc(p.name)}”${enLine(`Pass the device to “${esc(p.name)}”`)}`}</h2>
         <div class="flip ${S.reveal.shown ? 'flipped' : ''}" data-act="${S.reveal.shown ? '' : 'show-role'}">
           <div class="flip-inner">
             <div class="card-face card-back">
               <div class="cb-moon">🌕</div>
               <div class="cb-title">WEREWOLF</div>
-              <div class="cb-hint">แตะเพื่อเปิดดูบทบาท<br><small>อย่าให้คนอื่นเห็น</small></div>
+              <div class="cb-hint">แตะเพื่อเปิดดูบทบาท${enLine('Tap to see your role')}<small>อย่าให้คนอื่นเห็น · Don't let others see</small></div>
             </div>
             <div class="card-face card-front ${r.team}">
-              <div class="cf-team">${TEAMS[r.team].icon} ${TEAMS[r.team].name}</div>
+              <div class="cf-team">${TEAMS[r.team].icon} ${TEAMS[r.team].name}${enLine(TEAMS[r.team].en)}</div>
               <div class="cf-icon">${r.icon}</div>
               <div class="cf-name">${r.name}</div>
               <div class="cf-en">${r.en}</div>
-              <p class="cf-desc">${r.desc}</p>
+              <p class="cf-desc">${r.desc}${enLine(r.descEn)}</p>
               ${extra.map(e => `<p class="cf-extra">${e}</p>`).join('')}
             </div>
           </div>
         </div>
         ${S.reveal.shown
-          ? '<button class="btn-primary btn-block btn-big" data-act="hide-role">จำได้แล้ว · ส่งต่อ</button>'
-          : `<button class="btn-primary btn-block btn-big" data-act="show-role">ฉันคือ ${esc(p.name)} · เปิดดู</button>`}
+          ? '<button class="btn-primary btn-block btn-big" data-act="hide-role">จำได้แล้ว · ส่งต่อ<span class="en-line">Got it · pass it on</span></button>'
+          : `<button class="btn-primary btn-block btn-big" data-act="show-role">ฉันคือ ${esc(p.name)} · เปิดดู${enLine(`I am ${esc(p.name)} · reveal`)}</button>`}
       </div>`;
   },
 
   night() {
     const N = S.night;
     const step = N.step;
-    const head = `<div class="phase-head">🌙 คืนที่ ${S.day}</div>`;
+    const head = `<div class="phase-head">🌙 คืนที่ ${S.day} <small>Night ${S.day}</small></div>`;
     if (!step || N.view === 'sleeping') {
       return `${head}<div class="stage"><div class="big-icon float">🌙</div>${subtitleBox()}
-        <p class="muted">ทุกคนหลับตา…</p></div>`;
+        <p class="muted">ทุกคนหลับตา…${enLine('Everyone, close your eyes…')}</p></div>`;
     }
     const icon = step.icon || ROLES[step.role].icon;
     if (N.view === 'fake') {
       return `${head}<div class="stage"><div class="big-icon float">${icon}</div>${subtitleBox()}
-        <p class="muted">รอสักครู่…</p></div>`;
+        <p class="muted">รอสักครู่…${enLine('Please wait…')}</p></div>`;
     }
-    if (remoteActing()) return `${head}${waitingScreen(icon, 'รอผู้เล่นตัดสินใจบนมือถือ…')}`;
+    if (remoteActing()) return `${head}${waitingScreen(icon, `รอผู้เล่นตัดสินใจบนมือถือ…${enLine('Waiting for the player to decide on their phone…')}`)}`;
     if (N.view === 'result') {
       const res = N.result;
       return `${head}<div class="stage"><div class="big-icon">${res.icon || icon}</div>
         <h2>${res.title}</h2>
         <div class="result ${res.tone || ''}">${res.text}</div>
-        <button class="btn-primary btn-block btn-big" data-act="night-next">รับทราบ</button></div>`;
+        <button class="btn-primary btn-block btn-big" data-act="night-next">รับทราบ${enLine('Got it')}</button></div>`;
     }
     const ph = N.phases[N.phaseIdx];
     const top = `${head}<div class="stage tight"><div class="mid-icon">${icon}</div><h2>${ph.title}</h2>${subtitleBox()}
@@ -467,55 +469,56 @@ const VIEWS = {
       <div class="actions">
         ${ph.optional ? `<button data-act="night-skip">${ph.skipLabel || 'ไม่ใช้'}</button>` : ''}
         <button class="btn-primary" data-act="night-confirm" ${ready ? '' : 'disabled'}>
-          ${ph.count > 1 ? `ยืนยัน (${N.pick.length}/${ph.count})` : 'ยืนยัน'}</button>
+          ${ph.count > 1 ? `ยืนยัน (${N.pick.length}/${ph.count})` : 'ยืนยัน'}${enLine('Confirm')}</button>
       </div>`;
   },
 
   day() {
     const D = S.dayState;
-    const head = `<div class="phase-head">☀️ วันที่ ${S.day}</div>${aliveBar()}`;
+    const head = `<div class="phase-head">☀️ วันที่ ${S.day} <small>Day ${S.day}</small></div>${aliveBar()}`;
     if (D.phase === 'narrating') {
       return `${head}<div class="stage"><div class="big-icon float">${D.icon || '🌅'}</div>${subtitleBox()}</div>`;
     }
     if (D.phase === 'hunter' && S.mode === 'multi' && !D.hostOverride) {
-      return `${head}${waitingScreen('🏹', `รอ ${esc(byId(S.pendingHunters[0]).name)} เลือกเป้าหมายบนมือถือ…`)}`;
+      return `${head}${waitingScreen('🏹', `รอ ${esc(byId(S.pendingHunters[0]).name)} เลือกเป้าหมายบนมือถือ…${enLine(`Waiting for ${esc(byId(S.pendingHunters[0]).name)} to choose on their phone…`)}`)}`;
     }
     if (D.phase === 'vote' && S.mode === 'multi' && !D.hostOverride) return `${head}${voteTallyView()}`;
     if (D.phase === 'hunter') {
       const h = byId(S.pendingHunters[0]);
       return `${head}<div class="stage tight"><div class="mid-icon">🏹</div>
-        <h2>${esc(h.name)} จะยิงใคร?</h2>${subtitleBox()}</div>
+        <h2>${esc(h.name)} จะยิงใคร?${enLine(`Who does ${esc(h.name)} shoot?`)}</h2>${subtitleBox()}</div>
         ${playerGrid(alive(), D.pick)}
         <div class="actions">
-          <button data-act="hunter-skip">ไม่ยิง</button>
-          <button class="btn-primary" data-act="hunter-confirm" ${D.pick.length ? '' : 'disabled'}>🏹 ยิง</button>
+          <button data-act="hunter-skip">ไม่ยิง${enLine("Don't shoot")}</button>
+          <button class="btn-primary" data-act="hunter-confirm" ${D.pick.length ? '' : 'disabled'}>🏹 ยิง${enLine('Shoot')}</button>
         </div>`;
     }
     if (D.phase === 'talk') {
       const notes = [];
-      if (S.g.banished != null) notes.push(`🧿 ${esc(byId(S.g.banished).name)} ถูกสาปออกจากหมู่บ้าน`);
-      if (S.g.silenced != null) notes.push(`🤐 ${esc(byId(S.g.silenced).name)} ห้ามพูด`);
-      if (S.g.doubleVote) notes.push('😈 วันนี้ประหาร 2 รอบ');
-      if (noVoteToday()) notes.push('🚫 วันแรกไม่มีการโหวต');
+      if (S.g.banished != null) notes.push(`🧿 ${esc(byId(S.g.banished).name)} ถูกสาปออกจากหมู่บ้าน · banished`);
+      if (S.g.silenced != null) notes.push(`🤐 ${esc(byId(S.g.silenced).name)} ห้ามพูด · silenced`);
+      if (S.g.doubleVote) notes.push('😈 วันนี้ประหาร 2 รอบ · two executions today');
+      if (noVoteToday()) notes.push('🚫 วันแรกไม่มีการโหวต · no vote on day 1');
       return `${head}<div class="stage"><div class="timer-ring ${D.left <= 30 ? 'low' : ''}">
-          <div class="timer" id="timer">${formatTime(D.left)}</div><small>เวลาอภิปราย</small></div>
+          <div class="timer" id="timer">${formatTime(D.left)}</div><small>เวลาอภิปราย · Discussion</small></div>
         ${subtitleBox()}
         ${notes.length ? `<div class="notes">${notes.map(n => `<span class="chip">${n}</span>`).join('')}</div>` : ''}
         <div class="actions">
-          <button data-act="timer-toggle">${D.paused ? '▶️ ต่อ' : '⏸ หยุด'}</button>
-          <button data-act="timer-add">+30 วิ</button>
+          <button data-act="timer-toggle">${D.paused ? '▶️ ต่อ · Resume' : '⏸ หยุด · Pause'}</button>
+          <button data-act="timer-add">+30 วิ · +30s</button>
         </div>
-        <button class="btn-primary btn-block btn-big" style="margin-top:10px" data-act="to-vote">${noVoteToday() ? '🌙 จบวัน · เข้าสู่กลางคืน' : '🗳️ ไปลงคะแนนเลย'}</button></div>`;
+        <button class="btn-primary btn-block btn-big" style="margin-top:10px" data-act="to-vote">${noVoteToday() ? `🌙 จบวัน · เข้าสู่กลางคืน${enLine('End day · go to night')}` : `🗳️ ไปลงคะแนนเลย${enLine('Go to the vote')}`}</button></div>`;
     }
     if (D.phase === 'vote') {
       const candidates = alive().filter(p => p.id !== S.g.banished);
       return `${head}<div class="stage tight"><div class="mid-icon">🗳️</div>
-        <h2>${D.round === 2 ? 'รอบที่ 2: ' : ''}ใครถูกโหวตมากที่สุด?</h2>${subtitleBox()}
-        <p class="muted">ต้องได้เสียงเกินครึ่งจึงประหาร${aliveRole('mayor').length ? ' · นายกเทศมนตรีนับ 2 เสียง' : ''}</p></div>
+        <h2>${D.round === 2 ? 'รอบที่ 2: ' : ''}ใครถูกโหวตมากที่สุด?${enLine(`${D.round === 2 ? 'Round 2: ' : ''}Who got the most votes?`)}</h2>${subtitleBox()}
+        <p class="muted">ต้องได้เสียงเกินครึ่งจึงประหาร${aliveRole('mayor').length ? ' · นายกเทศมนตรีนับ 2 เสียง' : ''}
+          ${enLine(`More than half the votes needed to execute${aliveRole('mayor').length ? ' · the Mayor counts twice' : ''}`)}</p></div>
         ${playerGrid(candidates, D.pick)}
         <div class="actions">
-          <button data-act="no-execute">ไม่ประหาร</button>
-          <button class="btn-primary" data-act="execute" ${D.pick.length ? '' : 'disabled'}>⚖️ ประหาร</button>
+          <button data-act="no-execute">ไม่ประหาร${enLine('No execution')}</button>
+          <button class="btn-primary" data-act="execute" ${D.pick.length ? '' : 'disabled'}>⚖️ ประหาร${enLine('Execute')}</button>
         </div>`;
     }
     return '';
@@ -523,7 +526,8 @@ const VIEWS = {
 
   end() {
     const w = S.winner;
-    const title = w === 'wolf' ? 'ฝ่ายมนุษย์หมาป่าชนะ!' : w === 'tanner' ? 'ยาจกชนะ!' : 'ฝ่ายชาวบ้านชนะ!';
+    const title = w === 'wolf' ? `ฝ่ายมนุษย์หมาป่าชนะ!${enLine('Werewolves win!')}`
+      : w === 'tanner' ? `ยาจกชนะ!${enLine('The Tanner wins!')}` : `ฝ่ายชาวบ้านชนะ!${enLine('Villagers win!')}`;
     const icon = w === 'wolf' ? '🐺' : w === 'tanner' ? '🥀' : '🏡';
     const won = p => (w === 'tanner' ? p.role === 'tanner' : teamOf(p) === w);
     return `
@@ -533,19 +537,19 @@ const VIEWS = {
         ${subtitleBox()}
       </div>
       <section class="panel">
-        <strong>บทบาทของทุกคน</strong>
+        <strong>บทบาทของทุกคน · Everyone's roles</strong>
         <div class="reveal-list">${S.players.map(p => `
           <div class="rl-item ${p.alive ? '' : 'dead'} ${won(p) ? 'won' : 'lost'}">
             <span class="rl-icon">${ROLES[p.role].icon}</span>
             <span class="rl-name">${esc(p.name)}${won(p) ? ' 🏆' : ''}</span>
-            <span class="rl-role">${ROLES[p.role].name}${p.origRole !== p.role ? ` <small>(เดิม: ${ROLES[p.origRole].name})</small>` : ''}</span>
-            <span>${p.alive ? 'รอด' : '💀'}</span>
+            <span class="rl-role">${ROLES[p.role].name} <small>${ROLES[p.role].en}</small>${p.origRole !== p.role ? ` <small>(เดิม · was: ${ROLES[p.origRole].name})</small>` : ''}</span>
+            <span>${p.alive ? 'รอด · alive' : '💀'}</span>
           </div>`).join('')}</div>
       </section>
-      <section class="panel"><strong>บันทึกเกม</strong><ol class="log">${S.log.map(l => `<li>${esc(l)}</li>`).join('')}</ol></section>
+      <section class="panel"><strong>บันทึกเกม · Game log</strong><ol class="log">${S.log.map(l => `<li>${esc(l)}</li>`).join('')}</ol></section>
       <div class="actions">
-        <button data-act="to-setup">แก้ไขผู้เล่น / บทบาท</button>
-        <button class="btn-primary" data-act="replay">🔁 เล่นอีกรอบ</button>
+        <button data-act="to-setup">แก้ไขผู้เล่น / บทบาท${enLine('Edit players / roles')}</button>
+        <button class="btn-primary" data-act="replay">🔁 เล่นอีกรอบ${enLine('Play again')}</button>
       </div>`;
   },
 };
@@ -555,21 +559,21 @@ function renderSettings() {
   const el = document.getElementById('settings');
   const st = S.settings;
   el.innerHTML = `<div class="panel">
-    <label>เสียงพากย์ <input type="checkbox" data-setting="voice" ${st.voice ? 'checked' : ''}></label>
-    <label>ภาษาพากย์
+    <label>เสียงพากย์ · Narration <input type="checkbox" data-setting="voice" ${st.voice ? 'checked' : ''}></label>
+    <label>ภาษาพากย์ · Voice language
       <select data-setting="lang">${[['both', 'ไทย + English'], ['th', 'ไทย'], ['en', 'English']].map(([v, t]) =>
         `<option value="${v}" ${st.lang === v ? 'selected' : ''}>${t}</option>`).join('')}</select></label>
-    <label>ความเร็วเสียง
+    <label>ความเร็วเสียง · Voice speed
       <select data-setting="rate">${[0.8, 0.9, 1, 1.1, 1.25].map(r =>
         `<option value="${r}" ${st.rate === r ? 'selected' : ''}>${r}×</option>`).join('')}</select></label>
-    <label>เวลาอภิปราย
+    <label>เวลาอภิปราย · Discussion time
       <select data-setting="talkSec">${TALK_OPTIONS.map(s =>
         `<option value="${s}" ${st.talkSec === s ? 'selected' : ''}>${minutesText(s)}</option>`).join('')}</select></label>
-    <label>หมาป่าฆ่าได้ตั้งแต่คืนแรก <input type="checkbox" data-setting="firstNightKill" ${st.firstNightKill ? 'checked' : ''}></label>
-    <label>โหวตได้ตั้งแต่วันแรก <input type="checkbox" data-setting="firstDayVote" ${st.firstDayVote ? 'checked' : ''}></label>
-    <label>เปิดเผยบทบาทเมื่อตาย <input type="checkbox" data-setting="revealOnDeath" ${st.revealOnDeath ? 'checked' : ''}></label>
-    <div class="actions"><button data-act="test-voice">🔊 ทดสอบเสียง</button>
-      ${S.screen !== 'setup' ? '<button data-act="quit">จบเกมนี้</button>' : ''}</div>
+    <label>หมาป่าฆ่าได้ตั้งแต่คืนแรก · Wolves kill on night 1 <input type="checkbox" data-setting="firstNightKill" ${st.firstNightKill ? 'checked' : ''}></label>
+    <label>โหวตได้ตั้งแต่วันแรก · Vote on day 1 <input type="checkbox" data-setting="firstDayVote" ${st.firstDayVote ? 'checked' : ''}></label>
+    <label>เปิดเผยบทบาทเมื่อตาย · Reveal role on death <input type="checkbox" data-setting="revealOnDeath" ${st.revealOnDeath ? 'checked' : ''}></label>
+    <div class="actions"><button data-act="test-voice">🔊 ทดสอบเสียง · Test voice</button>
+      ${S.screen !== 'setup' ? '<button data-act="quit">จบเกมนี้ · End game</button>' : ''}</div>
   </div>`;
 }
 
@@ -616,35 +620,39 @@ function startGame() {
 // wake()/sleep() (บทพากย์), phases() (หน้าจอที่ต้องทำ)
 const pickPhase = (o) => Object.assign({ type: 'pick', count: 1, optional: false }, o);
 const onceUsed = key => S.g.used[key];
-const usedInfo = () => [{ type: 'info', title: 'ใช้พลังไปแล้ว', html: 'คุณใช้พลังนี้ไปแล้วในเกมนี้', button: 'หลับตา' }];
+const SAVE = `เก็บไว้ก่อน${enLine('Save it')}`;
+const SLEEP = `หลับตา${enLine('Close your eyes')}`;
+const usedInfo = () => [{ type: 'info', title: `ใช้พลังไปแล้ว${enLine('Power already used')}`,
+  html: `คุณใช้พลังนี้ไปแล้วในเกมนี้${enLine('You have already used this power this game')}`, button: SLEEP }];
 
 const NIGHT_STEPS = [
   { role: 'cupid', when: () => S.day === 1,
-    phases: () => [pickPhase({ title: 'เลือกคู่รัก 2 คน', count: 2, candidates: alive(),
+    phases: () => [pickPhase({ title: `เลือกคู่รัก 2 คน${enLine('Choose 2 lovers')}`, count: 2, candidates: alive(),
       onDone(ids) {
         S.g.lovers = ids;
         addLog(`กามเทพจับคู่ ${ids.map(i => byId(i).name).join(' ❤ ')}`);
-        return { icon: '💘', title: 'จับคู่แล้ว', tone: 'love',
-          text: `${names(ids.map(byId))}<br><small>แตะไหล่ทั้งสองคนเบา ๆ แล้วหลับตา</small>`, lines: LINES.cupidTouch };
+        return { icon: '💘', title: `จับคู่แล้ว${enLine('Lovers chosen')}`, tone: 'love',
+          text: `${names(ids.map(byId))}<br><small>แตะไหล่ทั้งสองคนเบา ๆ แล้วหลับตา${enLine('Gently tap both on the shoulder, then close your eyes')}</small>`, lines: LINES.cupidTouch };
       } })] },
   { id: 'lovers', role: 'cupid', icon: '💞', when: () => S.day === 1 && S.g.lovers,
     actors: () => S.g.lovers.map(byId).filter(p => p.alive),
     wake: () => LINES.loversWake, sleep: () => LINES.loversSleep,
-    phases: () => [{ type: 'info', title: 'คู่รัก', html: `<div class="big-text">💞 ${names(S.g.lovers.map(byId))}</div>
-      <p>ถ้าคนหนึ่งตาย อีกคนจะตรอมใจตายตาม</p>`, button: 'หลับตา' }] },
+    phases: () => [{ type: 'info', title: `คู่รัก${enLine('Lovers')}`, html: `<div class="big-text">💞 ${names(S.g.lovers.map(byId))}</div>
+      <p>ถ้าคนหนึ่งตาย อีกคนจะตรอมใจตายตาม${enLine('If one of you dies, the other dies of heartbreak')}</p>`, button: SLEEP }] },
   { role: 'mason', when: () => S.day === 1,
-    phases: () => [{ type: 'info', title: 'ภราดรแห่งเมสัน', html: `<div class="big-text">🧱 ${names(aliveRole('mason'))}</div>`, button: 'หลับตา' }] },
+    phases: () => [{ type: 'info', title: `ภราดรแห่งเมสัน${enLine('Masons')}`, html: `<div class="big-text">🧱 ${names(aliveRole('mason'))}</div>`, button: SLEEP }] },
   { role: 'minion', when: () => S.day === 1,
-    phases: () => [{ type: 'info', title: 'หมาป่าในหมู่บ้าน', html: `<div class="big-text">🐺 ${names(S.players.filter(isKiller))}</div>`, button: 'หลับตา' }] },
+    phases: () => [{ type: 'info', title: `หมาป่าในหมู่บ้าน${enLine('The werewolves')}`, html: `<div class="big-text">🐺 ${names(S.players.filter(isKiller))}</div>`, button: SLEEP }] },
   { role: 'cursed', actors: () => S.players.filter(p => p.origRole === 'cursed' && p.alive && !S.g.cursedTold),
     phases: () => {
       const p = S.players.find(o => o.origRole === 'cursed');
       if (p.role === 'werewolf') {
         S.g.cursedTold = true;
-        return [{ type: 'info', title: 'คำสาปทำงานแล้ว!', html: `<div class="big-text">🐺</div>
-          <p>คุณถูกหมาป่ากัด และกลายเป็น<strong>มนุษย์หมาป่า</strong>แล้ว<br>ตั้งแต่คืนนี้ ให้ลืมตาพร้อมหมาป่าทุกคืน</p>`, button: 'หลับตา' }];
+        return [{ type: 'info', title: `คำสาปทำงานแล้ว!${enLine('The curse has struck!')}`, html: `<div class="big-text">🐺</div>
+          <p>คุณถูกหมาป่ากัด และกลายเป็น<strong>มนุษย์หมาป่า</strong>แล้ว<br>ตั้งแต่คืนนี้ ให้ลืมตาพร้อมหมาป่าทุกคืน
+          ${enLine('You were bitten and are now a werewolf. From tonight, wake with the werewolves every night.')}</p>`, button: SLEEP }];
       }
-      return [{ type: 'info', title: 'คุณยังเป็นมนุษย์', html: '<div class="big-text">🧑</div><p>คืนนี้คุณยังเป็นชาวบ้านอยู่</p>', button: 'หลับตา' }];
+      return [{ type: 'info', title: `คุณยังเป็นมนุษย์${enLine('Still human')}`, html: `<div class="big-text">🧑</div><p>คืนนี้คุณยังเป็นชาวบ้านอยู่${enLine('Tonight you are still a villager')}</p>`, button: SLEEP }];
     } },
   { id: 'wolves', role: 'werewolf', actors: () => alive().filter(isKiller),
     wake: () => {
@@ -654,70 +662,70 @@ const NIGHT_STEPS = [
     },
     sleep: () => LINES.wolfSleep,
     phases: () => {
-      const pack = `ฝูงหมาป่า: ${names(alive().filter(isKiller))}`;
+      const pack = `ฝูงหมาป่า: ${names(alive().filter(isKiller))}${enLine('Your pack')}`;
       if (S.day === 1 && !S.settings.firstNightKill) {
-        return [{ type: 'info', title: 'จำหน้ากันไว้', html: `<div class="big-text">🐺 ${names(alive().filter(isKiller))}</div><p>คืนแรกยังไม่มีการล่า</p>`, button: 'หลับตา' }];
+        return [{ type: 'info', title: `จำหน้ากันไว้${enLine('Remember your pack')}`, html: `<div class="big-text">🐺 ${names(alive().filter(isKiller))}</div><p>คืนแรกยังไม่มีการล่า${enLine('No hunting on the first night')}</p>`, button: SLEEP }];
       }
       if (S.g.wolvesSick) {
         S.g.wolvesSick = false;
-        return [{ type: 'info', title: 'หมาป่าป่วย', html: '<div class="big-text">🤒</div><p>คืนนี้ล่าใครไม่ได้</p>', button: 'หลับตา' }];
+        return [{ type: 'info', title: `หมาป่าป่วย${enLine('The wolves are sick')}`, html: `<div class="big-text">🤒</div><p>คืนนี้ล่าใครไม่ได้${enLine('You cannot hunt tonight')}</p>`, button: SLEEP }];
       }
       const count = Math.min(S.g.cubRage ? 2 : 1, alive().filter(p => !isKiller(p)).length);
       S.g.cubRage = false;
-      return [pickPhase({ title: count > 1 ? 'เลือกเหยื่อ 2 คน' : 'เลือกเหยื่อ', hint: pack, count,
+      return [pickPhase({ title: count > 1 ? `เลือกเหยื่อ 2 คน${enLine('Choose 2 victims')}` : `เลือกเหยื่อ${enLine('Choose a victim')}`, hint: pack, count,
         candidates: alive().filter(p => !isKiller(p)),
         onDone(ids) { S.night.wolfTargets = ids; } })];
     } },
-  { role: 'sorcerer', phases: () => [pickPhase({ title: 'ใครคือเทพพยากรณ์?',
+  { role: 'sorcerer', phases: () => [pickPhase({ title: `ใครคือเทพพยากรณ์?${enLine('Who is the Seer?')}`,
     candidates: alive().filter(p => p.role !== 'sorcerer'),
     onDone([id]) {
       const t = byId(id), yes = t.role === 'seer';
-      return { title: esc(t.name), tone: yes ? 'wolf' : 'neutral', text: yes ? '🔮 คือเทพพยากรณ์!' : 'ไม่ใช่เทพพยากรณ์' };
+      return { title: esc(t.name), tone: yes ? 'wolf' : 'neutral', text: yes ? `🔮 คือเทพพยากรณ์!${enLine('Is the Seer!')}` : `ไม่ใช่เทพพยากรณ์${enLine('Not the Seer')}` };
     } })] },
   { role: 'seer',
     actors: () => aliveRole('seer').length ? aliveRole('seer') : aliveRole('apprentice'),
-    phases: () => [pickPhase({ title: 'ตรวจสอบใคร?',
-      hint: aliveRole('seer').length ? '' : '📖 ศิษย์เทพพยากรณ์รับช่วงพลังแล้ว',
+    phases: () => [pickPhase({ title: `ตรวจสอบใคร?${enLine('Who do you check?')}`,
+      hint: aliveRole('seer').length ? '' : `📖 ศิษย์เทพพยากรณ์รับช่วงพลังแล้ว${enLine('The Apprentice Seer has taken over')}`,
       candidates: alive().filter(p => p.role !== 'seer' && (aliveRole('seer').length || p.role !== 'apprentice')),
       onDone([id]) {
         const t = byId(id), wolf = seenAsWolf(t);
         addLog(`เทพพยากรณ์ตรวจ ${t.name}`);
-        return { title: esc(t.name), tone: wolf ? 'wolf' : 'village', text: wolf ? '🐺 เป็นมนุษย์หมาป่า' : '😇 ไม่ใช่หมาป่า' };
+        return { title: esc(t.name), tone: wolf ? 'wolf' : 'village', text: wolf ? `🐺 เป็นมนุษย์หมาป่า${enLine('Is a werewolf')}` : `😇 ไม่ใช่หมาป่า${enLine('Not a werewolf')}` };
       } })] },
-  { role: 'aura', phases: () => [pickPhase({ title: 'ตรวจพลังของใคร?',
+  { role: 'aura', phases: () => [pickPhase({ title: `ตรวจพลังของใคร?${enLine('Whose aura do you check?')}`,
     candidates: alive().filter(p => p.role !== 'aura'),
     onDone([id]) {
       const t = byId(id), special = !['villager', 'werewolf'].includes(t.role);
-      return { title: esc(t.name), tone: special ? 'love' : 'neutral', text: special ? '✨ มีพลังพิเศษ' : 'ไม่มีพลังพิเศษ' };
+      return { title: esc(t.name), tone: special ? 'love' : 'neutral', text: special ? `✨ มีพลังพิเศษ${enLine('Has a special role')}` : `ไม่มีพลังพิเศษ${enLine('No special role')}` };
     } })] },
-  { role: 'mystic', phases: () => [pickPhase({ title: 'ดูบทบาทของใคร?',
+  { role: 'mystic', phases: () => [pickPhase({ title: `ดูบทบาทของใคร?${enLine('Whose role do you see?')}`,
     candidates: alive().filter(p => p.role !== 'mystic'),
     onDone([id]) {
       const t = byId(id);
       return { title: esc(t.name), tone: teamOf(t) === 'wolf' ? 'wolf' : 'village', text: roleBadge(t.role) };
     } })] },
-  { role: 'mentalist', phases: () => [pickPhase({ title: 'เลือก 2 คนเพื่อเทียบฝ่าย', count: 2,
+  { role: 'mentalist', phases: () => [pickPhase({ title: `เลือก 2 คนเพื่อเทียบฝ่าย${enLine('Choose 2 players to compare teams')}`, count: 2,
     candidates: alive().filter(p => p.role !== 'mentalist'),
     onDone(ids) {
       const [a, b] = ids.map(byId), same = teamOf(a) === teamOf(b);
       return { title: `${esc(a.name)} กับ ${esc(b.name)}`, tone: same ? 'village' : 'wolf',
-        text: same ? '🤝 อยู่ฝ่ายเดียวกัน' : '⚔️ อยู่คนละฝ่าย' };
+        text: same ? `🤝 อยู่ฝ่ายเดียวกัน${enLine('Same team')}` : `⚔️ อยู่คนละฝ่าย${enLine('Different teams')}` };
     } })] },
-  { role: 'pi', phases: () => onceUsed('pi') ? usedInfo() : [pickPhase({ title: 'สืบสวนใคร?', optional: true, skipLabel: 'เก็บไว้ก่อน',
-    hint: 'ใช้ได้ครั้งเดียว — ตรวจคนที่ชี้และคนนั่งข้างซ้ายขวา',
+  { role: 'pi', phases: () => onceUsed('pi') ? usedInfo() : [pickPhase({ title: `สืบสวนใคร?${enLine('Who do you investigate?')}`, optional: true, skipLabel: SAVE,
+    hint: `ใช้ได้ครั้งเดียว — ตรวจคนที่ชี้และคนนั่งข้างซ้ายขวา${enLine('Once per game — checks them and both neighbours')}`,
     candidates: alive().filter(p => p.role !== 'pi'),
     onDone([id]) {
       S.g.used.pi = true;
       const t = byId(id), group = [t, ...neighbors(t)], found = group.some(seenAsWolf);
       return { title: names(group), tone: found ? 'wolf' : 'village',
-        text: found ? '🐺 มีมนุษย์หมาป่าอยู่ในกลุ่มนี้' : '😇 ไม่มีมนุษย์หมาป่าในกลุ่มนี้' };
+        text: found ? `🐺 มีมนุษย์หมาป่าอยู่ในกลุ่มนี้${enLine('A werewolf is in this group')}` : `😇 ไม่มีมนุษย์หมาป่าในกลุ่มนี้${enLine('No werewolf in this group')}` };
     } })] },
-  { role: 'bodyguard', phases: () => [pickPhase({ title: 'ปกป้องใคร?',
-    hint: S.g.lastGuard != null && byId(S.g.lastGuard).alive ? `คืนก่อนปกป้อง ${esc(byId(S.g.lastGuard).name)} — คืนนี้เลือกซ้ำไม่ได้` : '',
+  { role: 'bodyguard', phases: () => [pickPhase({ title: `ปกป้องใคร?${enLine('Who do you protect?')}`,
+    hint: S.g.lastGuard != null && byId(S.g.lastGuard).alive ? `คืนก่อนปกป้อง ${esc(byId(S.g.lastGuard).name)} — คืนนี้เลือกซ้ำไม่ได้${enLine("Can't protect the same player twice in a row")}` : '',
     candidates: alive().filter(p => p.role !== 'bodyguard' && p.id !== S.g.lastGuard),
     onDone([id]) { S.night.guard = id; } })] },
-  { role: 'priest', phases: () => onceUsed('priest') ? usedInfo() : [pickPhase({ title: 'อวยพรใคร?', optional: true, skipLabel: 'เก็บไว้ก่อน',
-    hint: 'ใช้ได้ครั้งเดียว — คนนั้นจะรอดจากการถูกกำจัด 1 ครั้ง',
+  { role: 'priest', phases: () => onceUsed('priest') ? usedInfo() : [pickPhase({ title: `อวยพรใคร?${enLine('Who do you bless?')}`, optional: true, skipLabel: SAVE,
+    hint: `ใช้ได้ครั้งเดียว — คนนั้นจะรอดจากการถูกกำจัด 1 ครั้ง${enLine('Once per game — they survive one elimination')}`,
     candidates: alive(),
     onDone([id]) { S.g.used.priest = true; byId(id).blessed = true; addLog(`นักบวชอวยพร ${byId(id).name}`); } })] },
   { role: 'witch', phases: () => {
@@ -725,38 +733,38 @@ const NIGHT_STEPS = [
     const targets = (S.night.wolfTargets || []).map(byId);
     if (S.g.potions.save) {
       if (targets.length) {
-        out.push({ type: 'choice', title: '🧪 ใช้ยาชุบชีวิตไหม?',
-          html: `<p>คืนนี้หมาป่าทำร้าย</p><div class="big-text">${names(targets)}</div>`,
-          options: [...targets.map(t => ({ label: `💚 ช่วย ${esc(t.name)}`, value: t.id, primary: true })), { label: 'ไม่ใช้', value: null }],
+        out.push({ type: 'choice', title: `🧪 ใช้ยาชุบชีวิตไหม?${enLine('Use the healing potion?')}`,
+          html: `<p>คืนนี้หมาป่าทำร้าย${enLine('Tonight the werewolves attacked')}</p><div class="big-text">${names(targets)}</div>`,
+          options: [...targets.map(t => ({ label: `💚 ช่วย ${esc(t.name)}${enLine(`Save ${esc(t.name)}`)}`, value: t.id, primary: true })), { label: `ไม่ใช้${enLine("Don't use")}`, value: null }],
           onDone(v) { if (v != null) { S.night.witchSave = v; S.g.potions.save = false; addLog(`แม่มดใช้ยาชุบชีวิตช่วย ${byId(v).name}`); } } });
       } else {
-        out.push({ type: 'info', title: 'คืนนี้สงบ', html: '<p>ไม่มีใครถูกหมาป่าทำร้าย</p>', button: 'ต่อไป' });
+        out.push({ type: 'info', title: `คืนนี้สงบ${enLine('A quiet night')}`, html: `<p>ไม่มีใครถูกหมาป่าทำร้าย${enLine('Nobody was attacked')}</p>`, button: `ต่อไป${enLine('Next')}` });
       }
     }
     if (S.g.potions.kill) {
-      out.push(pickPhase({ title: '☠️ ใช้ยาพิษกับใครไหม?', optional: true, skipLabel: 'ไม่ใช้',
+      out.push(pickPhase({ title: `☠️ ใช้ยาพิษกับใครไหม?${enLine('Poison someone?')}`, optional: true, skipLabel: `ไม่ใช้${enLine("Don't use")}`,
         candidates: alive().filter(p => p.role !== 'witch'),
         onDone([id]) { S.night.witchKill = id; S.g.potions.kill = false; } }));
     }
-    return out.length ? out : [{ type: 'info', title: 'ยาหมดแล้ว', html: '<p>คุณใช้ยาครบทั้งสองขวดแล้ว</p>', button: 'หลับตา' }];
+    return out.length ? out : [{ type: 'info', title: `ยาหมดแล้ว${enLine('No potions left')}`, html: `<p>คุณใช้ยาครบทั้งสองขวดแล้ว${enLine('You have used both potions')}</p>`, button: SLEEP }];
   } },
-  { role: 'huntress', phases: () => onceUsed('huntress') ? usedInfo() : [pickPhase({ title: 'ล่าใคร?', optional: true, skipLabel: 'เก็บไว้ก่อน',
-    hint: 'ใช้ได้ครั้งเดียวต่อเกม',
+  { role: 'huntress', phases: () => onceUsed('huntress') ? usedInfo() : [pickPhase({ title: `ล่าใคร?${enLine('Who do you hunt?')}`, optional: true, skipLabel: SAVE,
+    hint: `ใช้ได้ครั้งเดียวต่อเกม${enLine('Once per game')}`,
     candidates: alive().filter(p => p.role !== 'huntress'),
     onDone([id]) { S.g.used.huntress = true; S.night.huntressKill = id; } })] },
-  { role: 'revealer', phases: () => [pickPhase({ title: 'ชี้ตัวใคร?', optional: true, skipLabel: 'ไม่ชี้',
-    hint: 'ถ้าชี้ถูกหมาป่า เขาตาย — ถ้าผิด คุณตายเอง',
+  { role: 'revealer', phases: () => [pickPhase({ title: `ชี้ตัวใคร?${enLine('Who do you reveal?')}`, optional: true, skipLabel: `ไม่ชี้${enLine('Skip')}`,
+    hint: `ถ้าชี้ถูกหมาป่า เขาตาย — ถ้าผิด คุณตายเอง${enLine('Right: the werewolf dies — wrong: you die')}`,
     candidates: alive().filter(p => p.role !== 'revealer'),
     onDone([id]) { S.night.revealerTarget = id; } })] },
-  { role: 'oldhag', phases: () => [pickPhase({ title: 'สาปใครให้ออกจากหมู่บ้าน?', optional: true, skipLabel: 'ไม่สาป',
+  { role: 'oldhag', phases: () => [pickPhase({ title: `สาปใครให้ออกจากหมู่บ้าน?${enLine('Who do you banish tomorrow?')}`, optional: true, skipLabel: `ไม่สาป${enLine('Skip')}`,
     candidates: alive().filter(p => p.role !== 'oldhag'),
     onDone([id]) { S.night.hag = id; } })] },
-  { role: 'spellcaster', phases: () => [pickPhase({ title: 'ห้ามใครพูดพรุ่งนี้?', optional: true, skipLabel: 'ไม่ร่าย',
+  { role: 'spellcaster', phases: () => [pickPhase({ title: `ห้ามใครพูดพรุ่งนี้?${enLine('Who is silenced tomorrow?')}`, optional: true, skipLabel: `ไม่ร่าย${enLine('Skip')}`,
     candidates: alive().filter(p => p.role !== 'spellcaster'),
     onDone([id]) { S.night.spell = id; } })] },
-  { role: 'troublemaker', when: () => S.day > 1 || S.settings.firstDayVote, phases: () => onceUsed('troublemaker') ? usedInfo() : [{ type: 'choice', title: 'ป่วนหมู่บ้านไหม?',
-    html: '<p>ถ้าป่วน พรุ่งนี้จะมีการประหาร 2 รอบ (ใช้ได้ครั้งเดียว)</p>',
-    options: [{ label: '😈 ป่วนเลย', value: true, primary: true }, { label: 'ไว้ก่อน', value: false }],
+  { role: 'troublemaker', when: () => S.day > 1 || S.settings.firstDayVote, phases: () => onceUsed('troublemaker') ? usedInfo() : [{ type: 'choice', title: `ป่วนหมู่บ้านไหม?${enLine('Stir up trouble?')}`,
+    html: `<p>ถ้าป่วน พรุ่งนี้จะมีการประหาร 2 รอบ (ใช้ได้ครั้งเดียว)${enLine('Tomorrow will have two executions (once per game)')}</p>`,
+    options: [{ label: `😈 ป่วนเลย${enLine('Do it')}`, value: true, primary: true }, { label: `ไว้ก่อน${enLine('Not yet')}`, value: false }],
     onDone(v) { if (v) { S.g.used.troublemaker = true; S.night.trouble = true; } } }] },
 ];
 
@@ -1062,38 +1070,38 @@ async function execute(targetId) {
 // ---------- โหมดหลายเครื่อง ----------
 function lobbyPanel() {
   const join = Net.error ? `<p class="warn">⚠️ ${Net.error}</p>`
-    : !Net.room ? '<p class="muted">กำลังเปิดห้อง…</p>'
+    : !Net.room ? '<p class="muted">กำลังเปิดห้อง… · Opening room…</p>'
     : `<div class="join-box">
         <div id="qr" class="qr" data-url="${esc(Net.joinUrl())}"></div>
         <div class="join-info">
-          <p>เลขห้อง</p>
+          <p>เลขห้อง · Room code</p>
           <b class="room-code big">${Net.room}</b>
-          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR</p>
+          <p class="muted">ให้เพื่อนเปิดเว็บนี้ › เข้าร่วมห้อง › กรอกเลขห้อง หรือสแกน QR${enLine('Friends open this site › Join a room › enter the code, or scan the QR')}</p>
           <code>${esc(Net.joinUrl())}</code>
-          <small class="muted">${Net.kind === 'cloud' ? '🌍 ออนไลน์ — มือถือเข้าได้จากทุกเครือข่าย (4G/5G ก็ได้)'
-            : Net.public ? '🌍 ลิงก์สาธารณะ — มือถือเข้าได้จากทุกเครือข่าย (4G/5G ก็ได้)'
-            : '📶 มือถือต้องต่อ Wi-Fi เดียวกับเครื่องนี้ (ถ้าอยากเล่นต่างเครือข่าย ให้รัน python3 server.py --public)'}</small>
+          <small class="muted">${Net.kind === 'cloud' ? `🌍 ออนไลน์ — มือถือเข้าได้จากทุกเครือข่าย (4G/5G ก็ได้)${enLine('Online — phones can join from any network (4G/5G too)')}`
+            : Net.public ? `🌍 ลิงก์สาธารณะ — มือถือเข้าได้จากทุกเครือข่าย (4G/5G ก็ได้)${enLine('Public link — phones can join from any network (4G/5G too)')}`
+            : `📶 มือถือต้องต่อ Wi-Fi เดียวกับเครื่องนี้ (ถ้าอยากเล่นต่างเครือข่าย ให้รัน python3 server.py --public)${enLine('Phones must be on the same Wi-Fi as this device (for other networks, run python3 server.py --public)')}`}</small>
         </div>
       </div>`;
   return `
     <section class="panel">
-      <div class="row"><strong class="grow" id="player-count">ผู้เล่น (${S.joined.length} คน)</strong></div>
+      <div class="row"><strong class="grow" id="player-count">ผู้เล่น · Players (${S.joined.length})</strong></div>
       ${join}
       <label class="host-play"><input type="checkbox" data-voiceall ${S.settings.voiceAll ? 'checked' : ''}>
-        <span>🔊 พากย์เสียงบนทุกเครื่อง<small>เหมาะกับเล่นคนละที่ (เช่นผ่านวิดีโอคอล) — ถ้านั่งด้วยกัน ปิดไว้ให้พากย์แค่เครื่องนี้จะได้ไม่เสียงซ้อน</small></span></label>
+        <span>🔊 พากย์เสียงบนทุกเครื่อง · Narrate on every phone<small>เหมาะกับเล่นคนละที่ (เช่นผ่านวิดีโอคอล) — ถ้านั่งด้วยกัน ปิดไว้ให้พากย์แค่เครื่องนี้จะได้ไม่เสียงซ้อน${enLine('For playing apart (e.g. video call) — if sitting together, leave off so only this device narrates')}</small></span></label>
       ${Net.kind === 'cloud' ? '' : `<label class="host-play"><input type="checkbox" data-hostplay ${S.hostPlays ? 'checked' : ''}>
-        <span>🙋 ฉันเล่นด้วยบนเครื่องนี้<small>ไม่ต้องมีจอกลาง — เครื่องนี้พากย์เสียงและเป็นผู้เล่นไปพร้อมกัน</small></span></label>
-      ${S.hostPlays ? `<input type="text" class="host-name" data-hostname placeholder="ชื่อของคุณ" maxlength="20" value="${esc(S.hostName)}">` : ''}`}
-      <p class="muted small">เรียงตามที่นั่งรอบวง (กด ↑ ↓ เพื่อจัดลำดับ)</p>
+        <span>🙋 ฉันเล่นด้วยบนเครื่องนี้ · I'm playing too<small>ไม่ต้องมีจอกลาง — เครื่องนี้พากย์เสียงและเป็นผู้เล่นไปพร้อมกัน${enLine('No shared screen needed — this device narrates and plays at the same time')}</small></span></label>
+      ${S.hostPlays ? `<input type="text" class="host-name" data-hostname placeholder="ชื่อของคุณ · Your name" maxlength="20" value="${esc(S.hostName)}">` : ''}`}
+      <p class="muted small">เรียงตามที่นั่งรอบวง (กด ↑ ↓ เพื่อจัดลำดับ)${enLine('Order by seating around the circle (use ↑ ↓)')}</p>
       <div class="name-list">
         ${S.joined.map((j, i) => `
           <div class="row name-row">
             <span class="seat">${i + 1}</span>
-            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name) || '<em class="muted">(ชื่อของคุณ)</em>'}${j.local ? ' <small class="muted">· เครื่องนี้</small>' : ''}</span>
+            <span class="grow lobby-name"><i class="dot ${j.online ? 'on' : ''}"></i>${esc(j.name) || '<em class="muted">(ชื่อของคุณ · your name)</em>'}${j.local ? ' <small class="muted">· เครื่องนี้ · this device</small>' : ''}</span>
             <button class="icon-btn" data-act="seat" data-i="${i}" data-d="-1" aria-label="เลื่อนขึ้น">↑</button>
             <button class="icon-btn" data-act="seat" data-i="${i}" data-d="1" aria-label="เลื่อนลง">↓</button>
             ${j.local ? '<span class="icon-btn"></span>' : `<button class="icon-btn" data-act="kick" data-pid="${j.pid}" aria-label="ลบ">✕</button>`}
-          </div>`).join('') || '<p class="muted">ยังไม่มีใครเข้าร่วม…</p>'}
+          </div>`).join('') || '<p class="muted">ยังไม่มีใครเข้าร่วม… · No one has joined yet…</p>'}
       </div>
     </section>`;
 }
@@ -1110,18 +1118,18 @@ function revealMulti() {
   return `
     <div class="stage">
       <div class="big-icon float">📲</div>
-      <h2>ดูบทบาทบนมือถือของตัวเอง</h2>
-      <p class="muted">แตะการ์ดบนมือถือเพื่อเปิดดู อย่าให้คนอื่นเห็น แล้วกด “พร้อม”</p>
+      <h2>ดูบทบาทบนมือถือของตัวเอง${enLine('Check your role on your own phone')}</h2>
+      <p class="muted">แตะการ์ดบนมือถือเพื่อเปิดดู อย่าให้คนอื่นเห็น แล้วกด “พร้อม”${enLine('Tap the card on your phone, keep it hidden, then press “Ready”')}</p>
       <div class="alive-bar">${S.players.map(p =>
         `<span class="chip ${S.ready.has(p.id) ? 'ready' : ''}">${S.ready.has(p.id) ? '✓ ' : '⏳ '}${esc(p.name)}</span>`).join('')}</div>
-      <button class="btn-primary btn-block btn-big" data-act="start-night">🌙 เริ่มคืนแรก (${ready}/${n} พร้อม)</button>
+      <button class="btn-primary btn-block btn-big" data-act="start-night">🌙 เริ่มคืนแรก (${ready}/${n} พร้อม)${enLine(`Start the first night (${ready}/${n} ready)`)}</button>
     </div>`;
 }
 
 function waitingScreen(icon, text) {
   return `<div class="stage"><div class="big-icon float">${icon}</div>${subtitleBox()}
     <p class="muted">📱 ${text}</p>
-    <button class="btn-ghost small-btn" data-act="host-override">ทำแทนบนเครื่องนี้</button></div>`;
+    <button class="btn-ghost small-btn" data-act="host-override">ทำแทนบนเครื่องนี้ · Do it on this device</button></div>`;
 }
 
 /** ตอนนี้ขั้นกลางคืนรอให้ผู้เล่นกดบนมือถืออยู่หรือไม่ */
@@ -1151,8 +1159,9 @@ function voteTallyView() {
     .map(p => ({ p, n: tally[p.id] || 0, by: voters.filter(v => D.votes[v.id] === p.id) }))
     .sort((a, b) => b.n - a.n);
   return `<div class="stage tight"><div class="mid-icon">🗳️</div>
-      <h2>${D.round === 2 ? 'รอบที่ 2: ' : ''}โหวตบนมือถือ</h2>${subtitleBox()}
-      <p class="muted">ต้องได้เกินครึ่ง (${Math.floor(total / 2) + 1} เสียงขึ้นไป) จึงประหาร${aliveRole('mayor').length ? ' · นายกเทศมนตรีนับ 2 เสียง' : ''}</p></div>
+      <h2>${D.round === 2 ? 'รอบที่ 2: ' : ''}โหวตบนมือถือ${enLine(`${D.round === 2 ? 'Round 2: ' : ''}Vote on your phones`)}</h2>${subtitleBox()}
+      <p class="muted">ต้องได้เกินครึ่ง (${Math.floor(total / 2) + 1} เสียงขึ้นไป) จึงประหาร${aliveRole('mayor').length ? ' · นายกเทศมนตรีนับ 2 เสียง' : ''}
+        ${enLine(`Needs a majority (${Math.floor(total / 2) + 1}+ votes) to execute${aliveRole('mayor').length ? ' · the Mayor counts twice' : ''}`)}</p></div>
     <div class="tally">${rows.map(r => `
       <div class="tally-row">
         <span class="t-name">${esc(r.p.name)}</span>
@@ -1160,10 +1169,10 @@ function voteTallyView() {
         <b>${r.n}</b>
         <small class="t-by">${r.by.map(v => esc(v.name)).join(', ')}</small>
       </div>`).join('')}</div>
-    <p class="muted" style="text-align:center">โหวตแล้ว ${voted}/${voters.length} คน</p>
+    <p class="muted" style="text-align:center">โหวตแล้ว · Voted ${voted}/${voters.length}</p>
     <div class="actions">
-      <button data-act="host-override">เลือกบนเครื่องนี้</button>
-      <button class="btn-primary" data-act="resolve-vote">⚖️ สรุปผลโหวต</button>
+      <button data-act="host-override">เลือกบนเครื่องนี้${enLine('Choose on this device')}</button>
+      <button class="btn-primary" data-act="resolve-vote">⚖️ สรุปผลโหวต${enLine('Close the vote')}</button>
     </div>`;
 }
 
@@ -1188,12 +1197,12 @@ function extraInfo(p) {
   const out = [];
   if (isKiller(p)) {
     const pack = S.players.filter(o => isKiller(o) && o.id !== p.id);
-    if (pack.length) out.push(`🐺 ฝูงของคุณ: ${names(pack)}`);
+    if (pack.length) out.push(`🐺 ฝูงของคุณ: ${names(pack)}${enLine('Your pack')}`);
   }
   if (S.g && S.g.lovers && S.g.lovers.includes(p.id)) {
-    out.push(`💞 คู่รักของคุณ: ${esc(byId(S.g.lovers.find(i => i !== p.id)).name)}`);
+    out.push(`💞 คู่รักของคุณ: ${esc(byId(S.g.lovers.find(i => i !== p.id)).name)}${enLine('Your lover')}`);
   }
-  if (p.blessed) out.push('🙏 คุณได้รับพรจากนักบวช');
+  if (p.blessed) out.push(`🙏 คุณได้รับพรจากนักบวช${enLine('You are blessed by the Priest')}`);
   return out;
 }
 
@@ -1205,8 +1214,8 @@ function nightActionView() {
   }
   const ph = N.phases[N.phaseIdx];
   return {
-    kind: ph.type, icon, title: ph.title, hint: ph.hint || '', html: ph.html || '', button: ph.button || 'ต่อไป',
-    count: ph.count || 1, optional: !!ph.optional, skipLabel: ph.skipLabel || 'ไม่ใช้',
+    kind: ph.type, icon, title: ph.title, hint: ph.hint || '', html: ph.html || '', button: ph.button || `ต่อไป${enLine('Next')}`,
+    count: ph.count || 1, optional: !!ph.optional, skipLabel: ph.skipLabel || `ไม่ใช้${enLine('Skip')}`,
     candidates: (ph.candidates || []).map(c => ({ id: c.id, name: c.name })),
     options: (ph.options || []).map(o => ({ label: o.label, primary: !!o.primary })),
   };
@@ -1218,7 +1227,7 @@ function viewFor(p) {
   const v = {
     phase: S.screen, day: S.day, key: actionKey(),
     me: { name: p.name, icon: r.icon, role: r.name, en: r.en, team: r.team, teamName: TEAMS[r.team].name,
-      desc: r.desc, alive: p.alive, extra: extraInfo(p) },
+      teamEn: TEAMS[r.team].en, desc: r.desc, descEn: r.descEn, alive: p.alive, extra: extraInfo(p) },
   };
   if (S.screen === 'reveal') v.ready = S.ready.has(p.id);
   if (S.screen === 'night' && remoteActing() && stepActors(S.night.step).includes(p)) v.action = nightActionView();
@@ -1226,15 +1235,15 @@ function viewFor(p) {
     const D = S.dayState;
     v.dayPhase = D.phase;
     v.status = [];
-    if (S.g.banished === p.id) v.status.push('🧿 คุณถูกแม่หมอสาป วันนี้ห้ามพูดและห้ามโหวต');
-    if (S.g.silenced === p.id) v.status.push('🤐 คุณถูกจอมเวทร่ายมนตร์ วันนี้ห้ามพูด');
+    if (S.g.banished === p.id) v.status.push(`🧿 คุณถูกแม่หมอสาป วันนี้ห้ามพูดและห้ามโหวต${enLine('The Old Hag cursed you — no talking or voting today')}`);
+    if (S.g.silenced === p.id) v.status.push(`🤐 คุณถูกจอมเวทร่ายมนตร์ วันนี้ห้ามพูด${enLine('The Spellcaster silenced you — no talking today')}`);
     // เจ้าห้องที่เล่นด้วยเห็นนาฬิกาใหญ่บนจออยู่แล้ว
     if (D.phase === 'talk' && p.pid !== HOST_PID) v.talk = { left: Math.max(D.left, 0), paused: D.paused, noVote: noVoteToday() };
     if (D.phase === 'hunter' && !D.hostOverride && S.pendingHunters[0] === p.id) {
-      v.action = { kind: 'hunter', title: '🏹 ยิงใครไปด้วย?', candidates: alive().map(c => ({ id: c.id, name: c.name })) };
+      v.action = { kind: 'hunter', title: `🏹 ยิงใครไปด้วย?${enLine('Who do you take down with you?')}`, candidates: alive().map(c => ({ id: c.id, name: c.name })) };
     }
     if (D.phase === 'vote' && !D.hostOverride && voteEligible().includes(p)) {
-      v.action = { kind: 'vote', title: D.round === 2 ? 'โหวตรอบที่ 2' : 'โหวตประหาร',
+      v.action = { kind: 'vote', title: D.round === 2 ? `โหวตรอบที่ 2${enLine('Second vote')}` : `โหวตประหาร${enLine('Execution vote')}`,
         candidates: voteEligible().filter(c => c.id !== p.id).map(c => ({ id: c.id, name: c.name })),
         myVote: p.id in D.votes ? D.votes[p.id] : undefined };
     }
@@ -1243,7 +1252,7 @@ function viewFor(p) {
     const w = S.winner;
     v.winner = w;
     v.won = w === 'tanner' ? p.role === 'tanner' : teamOf(p) === w;
-    v.players = S.players.map(o => ({ name: o.name, icon: ROLES[o.role].icon, role: ROLES[o.role].name, alive: o.alive,
+    v.players = S.players.map(o => ({ name: o.name, icon: ROLES[o.role].icon, role: ROLES[o.role].name, en: ROLES[o.role].en, alive: o.alive,
       won: w === 'tanner' ? o.role === 'tanner' : teamOf(o) === w }));
   }
   return v;
@@ -1326,7 +1335,7 @@ document.addEventListener('input', e => {
     syncHostEntry();
     // อัปเดตเฉพาะส่วนที่จำเป็น เพื่อไม่ให้ช่องพิมพ์หลุดโฟกัส
     const row = [...$app.querySelectorAll('.lobby-name')][S.joined.findIndex(j => j.pid === HOST_PID)];
-    if (row) row.innerHTML = `<i class="dot on"></i>${esc(S.hostName) || '<em class="muted">(ชื่อของคุณ)</em>'} <small class="muted">· เครื่องนี้</small>`;
+    if (row) row.innerHTML = `<i class="dot on"></i>${esc(S.hostName) || '<em class="muted">(ชื่อของคุณ · your name)</em>'} <small class="muted">· เครื่องนี้ · this device</small>`;
     refreshSetup();
     publishViews();
     return;
@@ -1390,7 +1399,7 @@ document.addEventListener('click', e => {
     start: startGame,
     'create-room'() {
       const name = ($app.querySelector('#create-name')?.value || '').trim();
-      if (!name) { S.homeError = 'ใส่ชื่อของคุณก่อน'; return render(); }
+      if (!name) { S.homeError = 'ใส่ชื่อของคุณก่อน · Enter your name first'; return render(); }
       S.homeError = '';
       S.hostName = name;
       store.set('hostName', name);

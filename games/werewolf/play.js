@@ -21,17 +21,17 @@ function setPhase(view) {
 function renderJoin() {
   setPhase(null);
   $app.innerHTML = `
-    <a href="./" class="btn btn-ghost small-btn">← กลับ</a>
+    <a href="./" class="btn btn-ghost small-btn">← กลับ · Back</a>
     <section class="hero">
       <div class="hero-moon"></div>
-      <h1>เข้าร่วมเกม</h1>
-      <p>ใส่ชื่อของคุณเพื่อเข้าร่วมวง</p>
+      <h1>เข้าร่วมเกม${enLine('Join game')}</h1>
+      <p>ใส่ชื่อของคุณเพื่อเข้าร่วมวง${enLine('Enter your name to join')}</p>
     </section>
     <form class="panel stack" id="join-form">
-      <label class="field">เลขห้อง<input type="text" name="room" maxlength="6" autocapitalize="characters" autocomplete="off" value="${escape(state.room)}" required></label>
-      <label class="field">ชื่อของคุณ<input type="text" name="name" maxlength="20" autocomplete="nickname" value="${escape(state.name)}" required autofocus></label>
+      <label class="field"><span>เลขห้อง <small class="muted">Room code</small></span><input type="text" name="room" maxlength="6" autocapitalize="characters" autocomplete="off" value="${escape(state.room)}" required></label>
+      <label class="field"><span>ชื่อของคุณ <small class="muted">Your name</small></span><input type="text" name="name" maxlength="20" autocomplete="nickname" value="${escape(state.name)}" required autofocus></label>
       ${state.error ? `<p class="warn">⚠️ ${escape(state.error)}</p>` : ''}
-      <button class="btn-primary btn-block btn-big" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? 'กำลังเข้าร่วม…' : 'เข้าร่วม'}</button>
+      <button class="btn-primary btn-block btn-big" type="submit" ${state.busy ? 'disabled' : ''}>${state.busy ? `กำลังเข้าร่วม…${enLine('Joining…')}` : `เข้าร่วม${enLine('Join')}`}</button>
     </form>`;
 }
 
@@ -59,7 +59,7 @@ PNet.onGone = msg => {
   $app.onclick = null;
   renderJoin();
 };
-PNet.onConn = on => { $conn.textContent = on ? '' : '⚠️ ขาดการเชื่อมต่อ'; };
+PNet.onConn = on => { $conn.textContent = on ? '' : '⚠️ ขาดการเชื่อมต่อ · Disconnected'; };
 
 document.addEventListener('submit', async e => {
   if (e.target.id !== 'join-form') return;

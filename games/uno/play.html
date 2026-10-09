@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1c0606">
+  <title>อูโน่ UNO · ผู้เล่น</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../assets/common.css">
+  <link rel="stylesheet" href="../../assets/party.css">
+  <link rel="stylesheet" href="uno.css">
+</head>
+<body class="uno player-page" data-phase="setup">
+  <div class="wrap">
+    <nav class="topbar">
+      <span class="title">🃏 อูโน่ UNO</span>
+      <span class="conn" id="conn"></span>
+    </nav>
+    <main id="app"></main>
+  </div>
+  <script>window.GAME_NS = { id: 'uno', store: 'uno' };</script>
+  <script src="../../assets/config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../assets/supabase-mock.js"></script>
+  <script src="../../assets/net-cloud.js"></script>
+  <script src="../../assets/net-local.js"></script>
+  <script src="uno-ui.js"></script>
+  <script src="play.js"></script>
+</body>
+</html>

@@ -3,6 +3,9 @@
 // ใช้ทั้งบนมือถือผู้เล่น (play.html) และบนเครื่องเจ้าห้องที่เล่นด้วย (index.html)
 // แค่แสดง "หน้าจอ" ที่เจ้าห้องส่งมา แล้วส่งการกดกลับผ่าน send(action)
 
+// บรรทัดภาษาอังกฤษตัวเล็กใต้ข้อความไทย (ใช้ทั้งมือถือผู้เล่นและเครื่องเจ้าห้อง)
+const enLine = s => `<span class="en-line">${s}</span>`;
+
 function createPlayerUI(send) {
   const escHtml = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const U = {
@@ -100,14 +103,14 @@ function createPlayerUI(send) {
           <div class="card-face card-back">
             <div class="cb-moon">🌕</div>
             <div class="cb-title">WEREWOLF</div>
-            <div class="cb-hint">แตะเพื่อดูบทบาท</div>
+            <div class="cb-hint">แตะเพื่อดูบทบาท${enLine('Tap to see your role')}</div>
           </div>
           <div class="card-face card-front ${me.team}">
-            <div class="cf-team">${me.teamName}</div>
+            <div class="cf-team">${me.teamName}${enLine(me.teamEn)}</div>
             <div class="cf-icon">${me.icon}</div>
             <div class="cf-name">${me.role}</div>
             <div class="cf-en">${me.en}</div>
-            <p class="cf-desc">${me.desc}</p>
+            <p class="cf-desc">${me.desc}${enLine(me.descEn)}</p>
             ${me.extra.map(e => `<p class="cf-extra">${e}</p>`).join('')}
           </div>
         </div>
@@ -115,8 +118,8 @@ function createPlayerUI(send) {
   }
 
   function header(v) {
-    if (v.phase === 'night') return `<div class="phase-head">🌙 คืนที่ ${v.day} · ${escHtml(v.me.name)}</div>`;
-    if (v.phase === 'day') return `<div class="phase-head">☀️ วันที่ ${v.day} · ${escHtml(v.me.name)}</div>`;
+    if (v.phase === 'night') return `<div class="phase-head">🌙 คืนที่ ${v.day} <small>Night ${v.day}</small> · ${escHtml(v.me.name)}</div>`;
+    if (v.phase === 'day') return `<div class="phase-head">☀️ วันที่ ${v.day} <small>Day ${v.day}</small> · ${escHtml(v.me.name)}</div>`;
     return `<div class="phase-head">${escHtml(v.me.name)}</div>`;
   }
 
@@ -131,11 +134,11 @@ function createPlayerUI(send) {
     const waiting = U.sent === U.actionId && a.kind !== 'vote';  // โหวตเปลี่ยนใจได้
     const top = `<div class="stage tight"><div class="mid-icon">${a.icon || ''}</div><h2>${a.title}</h2>
       ${a.hint ? `<p class="muted">${a.hint}</p>` : ''}</div>`;
-    if (waiting) return `${top}<div class="stage"><p class="muted">✓ ส่งแล้ว รอสักครู่…</p></div>`;
+    if (waiting) return `${top}<div class="stage"><p class="muted">✓ ส่งแล้ว รอสักครู่…${enLine('Sent — please wait…')}</p></div>`;
     if (a.kind === 'result') {
       return `<div class="stage"><div class="big-icon">${a.icon}</div><h2>${a.title}</h2>
         <div class="result ${a.tone}">${a.text}</div>
-        <button class="btn-primary btn-block btn-big" data-pact="send" data-type="next">รับทราบ</button></div>`;
+        <button class="btn-primary btn-block btn-big" data-pact="send" data-type="next">รับทราบ${enLine('Got it')}</button></div>`;
     }
     if (a.kind === 'info') {
       return `${top}<div class="info-card">${a.html}</div>
@@ -152,25 +155,26 @@ function createPlayerUI(send) {
         <div class="actions">
           ${a.optional ? `<button data-pact="send" data-type="skip">${a.skipLabel}</button>` : ''}
           <button class="btn-primary" data-pact="confirm" ${ready ? '' : 'disabled'}>
-            ${a.count > 1 ? `ยืนยัน (${U.sel.length}/${a.count})` : 'ยืนยัน'}</button>
+            ${a.count > 1 ? `ยืนยัน (${U.sel.length}/${a.count})` : 'ยืนยัน'}${enLine('Confirm')}</button>
         </div>`;
     }
     if (a.kind === 'hunter') {
       return `${top}${playerButtons(a.candidates, 1)}
         <div class="actions">
-          <button data-pact="hunter" data-none="1">ไม่ยิง</button>
-          <button class="btn-primary" data-pact="hunter" ${U.sel.length ? '' : 'disabled'}>🏹 ยิง</button>
+          <button data-pact="hunter" data-none="1">ไม่ยิง${enLine("Don't shoot")}</button>
+          <button class="btn-primary" data-pact="hunter" ${U.sel.length ? '' : 'disabled'}>🏹 ยิง${enLine('Shoot')}</button>
         </div>`;
     }
     if (a.kind === 'vote') {
       const voted = a.myVote !== undefined;
-      const votedName = a.myVote == null ? 'งดออกเสียง' : (a.candidates.find(c => c.id === a.myVote) || {}).name;
+      const votedName = a.myVote == null ? 'งดออกเสียง (abstain)' : (a.candidates.find(c => c.id === a.myVote) || {}).name;
       return `<div class="stage tight"><div class="mid-icon">🗳️</div><h2>${a.title}</h2>
-        <p class="muted">${voted ? `คุณโหวต: <b>${escHtml(votedName || '')}</b> (เปลี่ยนได้จนกว่าจะสรุปผล)` : 'เลือกคนที่คุณคิดว่าเป็นหมาป่า'}</p></div>
+        <p class="muted">${voted ? `คุณโหวต: <b>${escHtml(votedName || '')}</b> (เปลี่ยนได้จนกว่าจะสรุปผล)${enLine('You can change your vote until results are in')}`
+          : `เลือกคนที่คุณคิดว่าเป็นหมาป่า${enLine('Pick who you think is a werewolf')}`}</p></div>
         ${playerButtons(a.candidates, 1)}
         <div class="actions">
-          <button data-pact="vote" data-none="1">งดออกเสียง</button>
-          <button class="btn-primary" data-pact="vote" ${U.sel.length ? '' : 'disabled'}>⚖️ โหวต</button>
+          <button data-pact="vote" data-none="1">งดออกเสียง${enLine('Abstain')}</button>
+          <button class="btn-primary" data-pact="vote" ${U.sel.length ? '' : 'disabled'}>⚖️ โหวต${enLine('Vote')}</button>
         </div>`;
     }
     return '';
@@ -181,19 +185,21 @@ function createPlayerUI(send) {
       return `
         <div class="stage">
           <div class="big-icon float">🏕️</div>
-          <h2>สวัสดี ${escHtml(v.name || '')}</h2>
-          <p class="muted">เข้าร่วมแล้ว — รอเจ้าของห้องเริ่มเกม${v.count ? ` (ตอนนี้ ${v.count} คน)` : ''}</p>
-          <div class="info-card"><p>วางมือถือไว้ข้างตัว เปิดหน้านี้ค้างไว้<br>เมื่อถึงตาคุณ มือถือจะสั่นและขึ้นหน้าจอให้เลือก</p></div>
+          <h2>สวัสดี ${escHtml(v.name || '')}${enLine(`Hi ${escHtml(v.name || '')}`)}</h2>
+          <p class="muted">เข้าร่วมแล้ว — รอเจ้าของห้องเริ่มเกม${v.count ? ` (ตอนนี้ ${v.count} คน)` : ''}
+            ${enLine(`Joined — waiting for the host to start${v.count ? ` (${v.count} players)` : ''}`)}</p>
+          <div class="info-card"><p>วางมือถือไว้ข้างตัว เปิดหน้านี้ค้างไว้<br>เมื่อถึงตาคุณ มือถือจะสั่นและขึ้นหน้าจอให้เลือก
+            ${enLine('Keep this page open beside you. Your phone will vibrate when it is your turn.')}</p></div>
         </div>`;
     },
 
     reveal(v) {
       return `${header(v)}<div class="stage">
-        <h2>บทบาทของคุณ</h2>
+        <h2>บทบาทของคุณ${enLine('Your role')}</h2>
         ${roleCard(v.me, U.cardOpen)}
         ${v.ready
-          ? '<p class="muted">✓ พร้อมแล้ว — รอคนอื่น…</p>'
-          : `<button class="btn-primary btn-block btn-big" data-pact="send" data-type="ready" ${U.cardOpen ? '' : 'disabled'}>จำได้แล้ว · พร้อม</button>`}
+          ? `<p class="muted">✓ พร้อมแล้ว — รอคนอื่น…${enLine('Ready — waiting for others…')}</p>`
+          : `<button class="btn-primary btn-block btn-big" data-pact="send" data-type="ready" ${U.cardOpen ? '' : 'disabled'}>จำได้แล้ว · พร้อม${enLine("Got it · I'm ready")}</button>`}
       </div>`;
     },
 
@@ -201,23 +207,24 @@ function createPlayerUI(send) {
       if (v.action) return header(v) + actionView(v);
       return `${header(v)}<div class="stage">
         <div class="big-icon float">${v.me.alive ? '😴' : '👻'}</div>
-        <h2>${v.me.alive ? 'หลับตา' : 'คุณตายแล้ว'}</h2>
-        <p class="muted">${v.me.alive ? 'ฟังเสียงเรียก เมื่อถึงตาคุณ มือถือจะสั่น' : 'ห้ามพูด ห้ามบอกใบ้'}</p>
+        <h2>${v.me.alive ? `หลับตา${enLine('Close your eyes')}` : `คุณตายแล้ว${enLine('You are dead')}`}</h2>
+        <p class="muted">${v.me.alive ? `ฟังเสียงเรียก เมื่อถึงตาคุณ มือถือจะสั่น${enLine('Listen for your call — your phone will vibrate on your turn')}`
+          : `ห้ามพูด ห้ามบอกใบ้${enLine('No talking, no hints')}`}</p>
         ${roleCard(v.me, U.cardOpen)}
       </div>`;
     },
 
     day(v) {
       if (v.action) return header(v) + actionView(v);
-      const msg = !v.me.alive ? '👻 คุณตายแล้ว — ห้ามพูดและห้ามบอกใบ้'
-        : v.dayPhase === 'talk' ? '🗣️ ช่วงอภิปราย — คุยกันหาตัวหมาป่า'
-        : v.dayPhase === 'vote' ? '🗳️ กำลังลงคะแนน'
-        : '☀️ ฟังประกาศ';
+      const msg = !v.me.alive ? `👻 คุณตายแล้ว — ห้ามพูดและห้ามบอกใบ้${enLine('You are dead — no talking, no hints')}`
+        : v.dayPhase === 'talk' ? `🗣️ ช่วงอภิปราย — คุยกันหาตัวหมาป่า${enLine('Discussion — find the werewolves')}`
+        : v.dayPhase === 'vote' ? `🗳️ กำลังลงคะแนน${enLine('Voting in progress')}`
+        : `☀️ ฟังประกาศ${enLine('Listen to the announcement')}`;
       const t = v.dayPhase === 'talk' && v.talk;
       const left = t ? talkLeft() : 0;
       const timer = t ? `<div class="timer-ring ${left <= 30 ? 'low' : ''}">
-          <div class="timer" data-ptimer>${fmtTime(left)}</div><small>${t.paused ? '⏸ หยุดเวลาไว้' : 'เวลาอภิปราย'}</small></div>
-          ${t.noVote ? '<p class="muted">🚫 วันแรกไม่มีการโหวต — หมดเวลาแล้วเข้าสู่กลางคืนเลย</p>' : ''}` : '';
+          <div class="timer" data-ptimer>${fmtTime(left)}</div><small>${t.paused ? '⏸ หยุดเวลาไว้ · Paused' : 'เวลาอภิปราย · Discussion'}</small></div>
+          ${t.noVote ? `<p class="muted">🚫 วันแรกไม่มีการโหวต — หมดเวลาแล้วเข้าสู่กลางคืนเลย${enLine('No vote on day 1 — night falls when time is up')}</p>` : ''}` : '';
       return `${header(v)}<div class="stage">${timer}
         <div class="info-card"><div class="big-text">${msg}</div>
           ${(v.status || []).map(s => `<p><strong>${s}</strong></p>`).join('')}</div>
@@ -226,18 +233,19 @@ function createPlayerUI(send) {
     },
 
     end(v) {
-      const title = v.winner === 'wolf' ? 'ฝ่ายมนุษย์หมาป่าชนะ!' : v.winner === 'tanner' ? 'ยาจกชนะ!' : 'ฝ่ายชาวบ้านชนะ!';
+      const title = v.winner === 'wolf' ? `ฝ่ายมนุษย์หมาป่าชนะ!${enLine('Werewolves win!')}`
+        : v.winner === 'tanner' ? `ยาจกชนะ!${enLine('The Tanner wins!')}` : `ฝ่ายชาวบ้านชนะ!${enLine('Villagers win!')}`;
       return `<div class="stage">
         <div class="big-icon trophy">${v.won ? '🏆' : '😵'}</div>
-        <h2 class="win-title ${v.won ? 'won' : 'lost'}">${v.won ? 'คุณชนะ!' : 'คุณแพ้'}</h2>
+        <h2 class="win-title ${v.won ? 'won' : 'lost'}">${v.won ? `คุณชนะ!${enLine('You win!')}` : `คุณแพ้${enLine('You lose')}`}</h2>
         <p class="muted">${title}</p>
       </div>
-      <section class="panel"><strong>บทบาทของทุกคน</strong>
+      <section class="panel"><strong>บทบาทของทุกคน · Everyone's roles</strong>
         <div class="reveal-list">${v.players.map(p => `
           <div class="rl-item ${p.alive ? '' : 'dead'} ${p.won ? 'won' : 'lost'}"><span class="rl-icon">${p.icon}</span>
-            <span class="rl-name">${escHtml(p.name)}${p.won ? ' 🏆' : ''}</span><span class="rl-role">${p.role}</span><span>${p.alive ? 'รอด' : '💀'}</span></div>`).join('')}
+            <span class="rl-name">${escHtml(p.name)}${p.won ? ' 🏆' : ''}</span><span class="rl-role">${p.role} <small>${p.en}</small></span><span>${p.alive ? 'รอด · alive' : '💀'}</span></div>`).join('')}
         </div></section>
-      <p class="muted" style="text-align:center">รอเจ้าของห้องเริ่มเกมใหม่…</p>`;
+      <p class="muted" style="text-align:center">รอเจ้าของห้องเริ่มเกมใหม่…${enLine('Waiting for the host to start a new game…')}</p>`;
     },
   };
 
