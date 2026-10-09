@@ -730,7 +730,7 @@ const NIGHT_STEPS = [
     } })] },
   { role: 'bodyguard', phases: () => [pickPhase({ title: `ปกป้องใคร?${enLine('Who do you protect?')}`,
     hint: S.g.lastGuard != null && byId(S.g.lastGuard).alive ? `คืนก่อนปกป้อง ${esc(byId(S.g.lastGuard).name)} — คืนนี้เลือกซ้ำไม่ได้${enLine("Can't protect the same player twice in a row")}` : '',
-    candidates: alive().filter(p => p.role !== 'bodyguard' && p.id !== S.g.lastGuard),
+    candidates: alive().filter(p => p.id !== S.g.lastGuard),
     onDone([id]) { S.night.guard = id; } })] },
   { role: 'priest', phases: () => onceUsed('priest') ? usedInfo() : [pickPhase({ title: `อวยพรใคร?${enLine('Who do you bless?')}`, optional: true, skipLabel: SAVE,
     hint: `ใช้ได้ครั้งเดียว — คนนั้นจะรอดจากการถูกกำจัด 1 ครั้ง${enLine('Once per game — they survive one elimination')}`,
