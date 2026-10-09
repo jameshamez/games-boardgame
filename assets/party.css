@@ -286,6 +286,8 @@ input[type="text"]:focus { outline: 2px solid var(--accent); outline-offset: 1px
 .chip { font-size: 13px; padding: 4px 11px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border); }
 .chip.dead { opacity: .45; text-decoration: line-through; }
 .notes { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.not-voted { text-align: center; margin: 10px 0; }
+.not-voted > small { display: block; color: var(--muted); margin-bottom: 6px; }
 
 .timer-ring {
   width: 210px; height: 210px; margin: 6px auto; border-radius: 50%;

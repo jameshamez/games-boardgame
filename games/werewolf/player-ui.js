@@ -129,6 +129,14 @@ function createPlayerUI(send) {
         <span class="pname">${escHtml(c.name)}</span></button>`).join('')}</div>`;
   }
 
+  /** รายชื่อคนที่ยังไม่โหวต (ระหว่างลงคะแนน) */
+  function notVotedList(v) {
+    const list = v.notVoted || [];
+    if (!list.length) return '';
+    return `<div class="not-voted"><small>⏳ ยังไม่โหวต${enLine('Not voted yet')}</small>
+      <div class="notes">${list.map(n => `<span class="chip">${escHtml(n)}</span>`).join('')}</div></div>`;
+  }
+
   function actionView(v) {
     const a = v.action;
     const waiting = U.sent === U.actionId && !(a.kind === 'vote' && a.myVote !== undefined);
@@ -172,7 +180,8 @@ function createPlayerUI(send) {
       if (voted) {
         return `<div class="stage tight"><div class="mid-icon">🗳️</div><h2>${a.title}</h2></div>
           <div class="stage"><div class="info-card"><p>คุณโหวต${enLine('Your vote')}</p><div class="big-text">🔒 ${escHtml(votedName || '')}</div></div>
-          <p class="muted">โหวตแล้วเปลี่ยนไม่ได้ — รอคนอื่นโหวต…${enLine('Votes are final — waiting for others…')}</p></div>`;
+          <p class="muted">โหวตแล้วเปลี่ยนไม่ได้ — รอคนอื่นโหวต…${enLine('Votes are final — waiting for others…')}</p>
+          ${notVotedList(v)}</div>`;
       }
       return `<div class="stage tight"><div class="mid-icon">🗳️</div><h2>${a.title}</h2>
         <p class="muted">เลือกคนที่คุณคิดว่าเป็นหมาป่า — โหวตแล้วเปลี่ยนไม่ได้${enLine('Pick who you think is a werewolf — votes are final')}</p></div>
@@ -232,7 +241,8 @@ function createPlayerUI(send) {
           ${t.noVote ? `<p class="muted">🚫 วันแรกไม่มีการโหวต — หมดเวลาแล้วเข้าสู่กลางคืนเลย${enLine('No vote on day 1 — night falls when time is up')}</p>` : ''}` : '';
       return `${header(v)}<div class="stage">${timer}
         <div class="info-card"><div class="big-text">${msg}</div>
-          ${(v.status || []).map(s => `<p><strong>${s}</strong></p>`).join('')}</div>
+          ${(v.status || []).map(s => `<p><strong>${s}</strong></p>`).join('')}
+          ${v.dayPhase === 'vote' ? notVotedList(v) : ''}</div>
         ${roleCard(v.me, U.cardOpen)}
       </div>`;
     },

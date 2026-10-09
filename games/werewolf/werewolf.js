@@ -1178,10 +1178,21 @@ function voteTallyView() {
         <small class="t-by">${r.by.map(v => esc(v.name)).join(', ')}</small>
       </div>`).join('')}</div>
     <p class="muted" style="text-align:center">โหวตแล้ว · Voted ${voted}/${voters.length}</p>
+    ${notVotedBox()}
     <div class="actions">
       <button data-act="host-override">เลือกบนเครื่องนี้${enLine('Choose on this device')}</button>
       <button class="btn-primary" data-act="resolve-vote">⚖️ สรุปผลโหวต${enLine('Close the vote')}</button>
     </div>`;
+}
+
+/** ผู้มีสิทธิ์โหวตที่ยังไม่ได้โหวต */
+const notVoted = () => voteEligible().filter(p => !(p.id in S.dayState.votes));
+
+function notVotedBox() {
+  const list = notVoted();
+  if (!list.length) return '';
+  return `<div class="not-voted"><small>⏳ ยังไม่โหวต${enLine('Not voted yet')}</small>
+    <div class="notes">${list.map(p => `<span class="chip">${esc(p.name)}</span>`).join('')}</div></div>`;
 }
 
 function resolveVote() {
@@ -1242,6 +1253,7 @@ function viewFor(p) {
   if (S.screen === 'day') {
     const D = S.dayState;
     v.dayPhase = D.phase;
+    if (D.phase === 'vote') v.notVoted = notVoted().map(o => o.name);
     v.status = [];
     if (S.g.banished === p.id) v.status.push(`🧿 คุณถูกแม่หมอสาป วันนี้ห้ามพูดและห้ามโหวต${enLine('The Old Hag cursed you — no talking or voting today')}`);
     if (S.g.silenced === p.id) v.status.push(`🤐 คุณถูกจอมเวทร่ายมนตร์ วันนี้ห้ามพูด${enLine('The Spellcaster silenced you — no talking today')}`);
